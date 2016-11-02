@@ -1,0 +1,58 @@
+$: << 'lib'
+
+require 'sshkit'
+require 'loom'
+require 'mods/core'
+include Loom::DSL
+
+#mod.files.cp "loom_test_file", "loom_other_file"
+#mod.files.mv "a", "b"
+
+SSHKit.config.output_verbosity = :debug
+
+local do 
+  capture(:whoami)
+end
+
+quotes = '45.55.70.196:2222'
+hosts = ['ejjohnson.net:2222', quotes]
+on hosts do |ctx|
+  execute(:uptime)
+  execute(:echo, 'i am here')
+
+  ctx.mods.files(['/usr', '/opt'])
+    .ls
+    .stat
+end
+
+on quotes do |ctx|
+  within '/opt/options' do
+    # commented out for speed reasons
+    #capture(:du, '-sch')
+  end
+
+  execute(:pwd)
+
+  # Not proxied by Loom::Shell
+  # upload! './loom_test_file', 'loom_test_file'
+
+  ctx.mods.files.append('loom_test_file', 'appended data')
+  execute(:cat, 'loom_test_file')
+
+  ctx.mods.files.write('loom_write_new_file', 'wrote some data')
+  ctx.mods.files.cat('loom_write_new_file')
+
+  # sudo not implemented yet
+  #as :root do
+  #execute(:whoami)
+  # execute('whoami')
+  #end
+end
+
+on 'vm-ubuntu-db' do |h|
+  # unable to sudo to postgres as it's not setup in sudoers,
+  # need to ensure passwordless sudo exists
+  #as :postgres do
+  #execute whoami
+  #end
+end
