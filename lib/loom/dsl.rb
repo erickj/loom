@@ -1,26 +1,22 @@
 module Loom
   module DSL
 
-    def on(*args, &block)
+    def on(host_spec, &block)
 
-      SSHKitShadow.on(*args) do |host|
+      SSHKitShadow.on host_spec do |host|
         sshkit_backend = self
 
+        # Each host needs its own shell to make sure context is preserved correctly
         shell = Loom::Shell.new sshkit_backend
-        mods = Loom::Module::ModuleLoader.new(shell)
+        mods = Loom::Module::ModLoader.new shell
 
-        Loom::Context.run(shell, mods, host, &block)
+        Loom::Context::PatternContext.run shell, mods, host, &block
       end
     end
 
     def local(*args, &block)
-      SSHKitShadow.run_locally(*args, &block)
+      SSHKitShadow.run_locally *args, &block
     end
-
-    def mod
-      
-    end
-
   end
 
   class SSHKitShadow

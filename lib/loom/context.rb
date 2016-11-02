@@ -1,20 +1,15 @@
-module Loom
-  class Context
+module Loom::Context
 
-    attr_accessor :shell, :mods, :host
-
-    def initialize(shell, mods, host)
-      @shell = shell
-      @mods = mods
-      @host = host
+  class PatternContext
+    def self.run(shell, mods, host, &block)
+      self.instance_exec(shell, mods, host, &block)
     end
-
-    class << self
-      def run(shell, mods, host, &block)
-        context = self.new(shell, mods, host)
-        shell.instance_exec(context, &block)
-      end
-    end
-
   end
+
+  class ActionContext
+    def self.run(mod, *args, &block)
+      mod.instance_exec(mod.shell, mod.mods, *args, &block)
+    end
+  end
+
 end

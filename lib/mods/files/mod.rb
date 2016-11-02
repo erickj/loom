@@ -1,48 +1,52 @@
-require 'loom/module'
+require "loom/module"
+require_relative "actions"
 
-class Loom::Mods::Files < Loom::Module::Mod
+module Loom::Mods::Files
+  class Files < Loom::Module::Mod
 
-  def initialize(paths=nil)
-    @paths = [paths].flatten.compact
-  end
+    def initialize(paths=nil)
+      @paths = [paths].flatten.compact
+    end
 
-  action :ls do |*args|
-    if @paths.empty?
-      shell.ls *args
-    else
-      @paths.each do |p|
-        args.unshift p
-        shell.ls *args
+    include Actions::Core
+
+    ns :rsync do
+      include Actions::Rsync
+    end
+
+    ns :dir do
+      include Actions::Dir
+    end
+
+    private
+    ##
+    # Executes #{action} for each path in #{paths} or #{@paths}. If
+    # action is not given, a block is expected to which each path will
+    # be passed.
+    def for_paths(*paths, action: nil, flags: nil, &block)
+      raise 'use either action or block in for_paths' if action && block_given?
+      raise 'use either action or block in for_paths' unless action || block_given?
+
+      get_paths(*paths).each do |p|
+        if block
+          yield p
+        else
+          cmd = [flags, p].join ' '
+          shell.send action, cmd
+        end
       end
     end
-  end
 
-  action :stat do |*args|
-    if @paths.empty?
-      shell.stat *args
-    else
-      @paths.each do |p|
-        args.unshift p
-        shell.stat *args
+    ##
+    # Returns either a list of paths used to initialize this file mod,
+    # or the override paths. Paths are validated to be either absolute
+    # or explicitly relative with a leading '.'
+    def get_paths(*override_paths)
+      paths = override_paths.empty? ? @paths : override_paths
+      paths.each do |p|
+        raise "prefix relative paths with '.': #{path}" unless p.match /^[.\/]/
       end
-    end    
-  end
-
-  action :append do |path, text|
-    if shell.verify "[ -f #{path} ]"
-      shell.echo "\"#{text}\" >> #{path}"
     end
-  end
 
-  action :write do |path, text|
-    if shell.verify "[ ! -f \"#{path}\" ]"
-      write! path, text
-    end
   end
-
-  action :write! do |path, text|
-    shell.echo "\"#{text}\" > #{path}"
-  end
-  alias_method :overwrite, :write!
-
 end

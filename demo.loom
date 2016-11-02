@@ -16,35 +16,55 @@ end
 
 quotes = '45.55.70.196:2222'
 hosts = ['ejjohnson.net:2222', quotes]
-on hosts do |ctx|
-  uptime
-  echo 'i am here'
 
-  ctx.mods.files(['/usr', '/opt'])
-    .ls
-    .stat
+hosts = ['vm-ubuntu-db']
+
+on hosts do |_, mods, ctx|
+  _.uptime
+  _.echo 'i am here'
+
+  _.local.uptime
+
+  mods.files((1..3).to_a.map { |i| "./loom.tmp/dir.#{i}" })
+    .mkdir(:flags => '-p')
+    .dir.cd do |_|
+    _.pwd
+  end
+#  return
+
+#  mods.files(['/usr', '/opt'])
+#    .ls
+#    .stat
 end
 
-on quotes do |ctx|
+exit
+
+on quotes do |_, mods, host|
+  _.pwd
+
+  mods.files.rsync.up 'some/file/path'
+
+  mods.files.append 'loom_test_file', 'appended data'
+  _.cat 'loom_test_file'
+
+  mods.files((1..5).to_a.map { |i| "dummy.file.#{i}" })
+    .touch
+    .chown(:root)
+
   within '/opt/options' do
     # commented out for speed reasons
     #capture(:du, '-sch')
   end
 
-  execute(:pwd)
-
   # Not proxied by Loom::Shell
   # upload! './loom_test_file', 'loom_test_file'
 
-  ctx.mods.files.append('loom_test_file', 'appended data')
-  execute(:cat, 'loom_test_file')
+  mods.files.write! 'loom_write_new_file', 'overwritten data'
+  _.cat 'loom_write_new_file'
+  _.rm 'loom_write_new_file'
 
-  ctx.mods.files.write!('loom_write_new_file', 'overwritten data')
-  cat 'loom_write_new_file'
-  rm 'loom_write_new_file'
-
-  ctx.mods.files.write('loom_write_new_file', 'wrote some data')
-  cat 'loom_write_new_file'
+  mods.files.write 'loom_write_new_file', 'wrote some data'
+  _.cat 'loom_write_new_file'
 
   # sudo not implemented yet
   #as :root do

@@ -4,5 +4,5 @@ module Loom
 
 end
 
-require_relative 'loom/all'
+require 'loom/all'
 
