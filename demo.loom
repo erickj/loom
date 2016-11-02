@@ -2,7 +2,7 @@ $: << 'lib'
 
 require 'sshkit'
 require 'loom'
-require 'mods/core'
+require 'coremods/all'
 include Loom::DSL
 
 #mod.files.cp "loom_test_file", "loom_other_file"
@@ -19,7 +19,7 @@ hosts = ['ejjohnson.net:2222', quotes]
 
 hosts = ['vm-ubuntu-db']
 
-on hosts do |_, mods, ctx|
+on hosts do |_, mods, host|
   _.uptime
   _.echo 'i am here'
 
@@ -27,45 +27,48 @@ on hosts do |_, mods, ctx|
 
   mods.files((1..3).to_a.map { |i| "./loom.tmp/dir.#{i}" })
     .mkdir(:flags => '-p')
-    .cd do |_| _.pwd end
+    .cd { _.pwd }
 
   # TODO: Fix LocalJumpError for `return`, due to f'd up
   # action_hander/ActionContext binding w/ instance_exec
   # return
 
-#  mods.files(['/usr', '/opt'])
-#    .ls
-#    .stat
+  mods.files(['/usr', '/opt'])
+    .ls
+    .stat
 end
-
-exit
 
 on quotes do |_, mods, host|
   _.pwd
 
-  mods.files.rsync.up 'some/file/path'
+  mods.files.rsync.up './some/file/path'
 
-  mods.files.append 'loom_test_file', 'appended data'
-  _.cat 'loom_test_file'
+  mods.files
+    .touch('./loom_test_file')
+    .append('./loom_test_file', :text => 'appended data')
+    .cat('./loom_test_file')
 
-  mods.files((1..5).to_a.map { |i| "dummy.file.#{i}" })
-    .touch
-    .chown(:root)
+  _.as :root do
+    mods.files((1..5).to_a.map { |i| "./dummy.file.#{i}" })
+      .touch
+      .chown(:user => :erick)
+  end
 
-  within '/opt/options' do
+  mods.files.cd '/opt/options' do
     # commented out for speed reasons
     #capture(:du, '-sch')
+    _.ls 'quotes'
   end
 
   # Not proxied by Loom::Shell
   # upload! './loom_test_file', 'loom_test_file'
 
-  mods.files.write! 'loom_write_new_file', 'overwritten data'
+  mods.files.write! './loom_write_new_file', :text => 'overwritten data'
   _.cat 'loom_write_new_file'
   _.rm 'loom_write_new_file'
 
-  mods.files.write 'loom_write_new_file', 'wrote some data'
-  _.cat 'loom_write_new_file'
+  mods.files.write './loom_write_new_file', :text => 'wrote some data'
+  _.cat './loom_write_new_file'
 
   # sudo not implemented yet
   #as :root do

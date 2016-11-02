@@ -6,10 +6,10 @@ module Loom::Context
     end
   end
 
-  class ActionContext
-    def self.run(mod, inner_block, *args, &block)
-      mod.instance_exec mod.shell, mod.mods, *args, &block
-    end
-  end
+  # class ActionContext
+  #   def self.run(mod, inner_block, *args, &block)
+  #     mod.instance_exec mod.shell, mod.mods, *args, &block
+  #   end
+  # end
 
 end

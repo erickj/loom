@@ -8,7 +8,7 @@ module Loom
 
         # Each host needs its own shell to make sure context is preserved correctly
         shell = Loom::Shell.new sshkit_backend
-        mods = Loom::Module::ModLoader.new shell
+        mods = Loom::Mods::ModLoader.new shell
 
         Loom::Context::PatternContext.run shell, mods, host, &block
       end

@@ -19,7 +19,7 @@ module Loom
       execute method, *args
     end
 
-    [:capture, :test, :within].each do |method|
+    [:capture, :test, :within, :as].each do |method|
       define_method method do |*args, &block|
         @sshkit_backend.send method, *args, &block
       end

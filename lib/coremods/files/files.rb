@@ -1,17 +1,13 @@
-require "loom/module"
+require "loom/mods"
 require_relative "actions"
 
-module Loom::Mods::Files
-  class Files < Loom::Module::Mod
+module Loom::CoreMods::Files
+  class Files < Loom::Mods::Module
+    import_actions Actions
+    import_actions Actions::Rsync, :rsync
 
     def initialize(paths=nil)
       @paths = [paths].flatten.compact
-    end
-
-    include Actions::Core
-
-    ns :rsync do
-      include Actions::Rsync
     end
 
     private
@@ -40,7 +36,7 @@ module Loom::Mods::Files
     def get_paths(*override_paths)
       paths = override_paths.empty? ? @paths : override_paths
       paths.each do |p|
-        raise "prefix relative paths with '.': #{path}" unless p.match /^[.\/]/
+        raise "prefix relative paths with '.': #{p}" unless p.match /^[.]?\//
       end
     end
 
