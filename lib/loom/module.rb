@@ -2,15 +2,10 @@ module Loom
   module Module
 
     NotLoaded = Class.new(StandardError)
-    ActionNotRegistered = Class.new(StandardError)
 
     class Mod
 
-      attr_accessor :shell
-
-      def method_missing(method, *args, &block)
-        raise ActionNotRegistered, method
-      end
+      attr_accessor :shell, :mods
 
       class << self
 
@@ -20,7 +15,7 @@ module Loom
 
         def define_action_method(name, &block)
           define_method name do |*args|
-            puts self.instance_exec(*args, &block)
+            self.instance_exec(*args, &block)
             self
           end
           puts "defined method #{name}"
@@ -46,7 +41,9 @@ module Loom
           puts "defined_mod_factory #{name}"
           define_method name do |*args|
             mod = klass.new(*args)
-            mod.shell = instance_variable_get :"@shell"
+            # self is a ModuleLoader
+            mod.shell = @shell
+            mod.mods = self 
             mod
           end
         end

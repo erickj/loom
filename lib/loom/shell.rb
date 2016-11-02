@@ -17,8 +17,12 @@ module Loom
 
     [:execute, :within, :test].each do |method|
       define_method method do |*args, &block|
-        instance_variable_get(:"@sshkit_backend").send method, *args, &block
+        @sshkit_backend.send method, *args, &block
       end
+    end
+
+    def method_missing(method, *args, &block)
+      execute(method, *args)
     end
 
   end

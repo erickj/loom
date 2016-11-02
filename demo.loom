@@ -17,8 +17,8 @@ end
 quotes = '45.55.70.196:2222'
 hosts = ['ejjohnson.net:2222', quotes]
 on hosts do |ctx|
-  execute(:uptime)
-  execute(:echo, 'i am here')
+  uptime
+  echo 'i am here'
 
   ctx.mods.files(['/usr', '/opt'])
     .ls
@@ -39,8 +39,12 @@ on quotes do |ctx|
   ctx.mods.files.append('loom_test_file', 'appended data')
   execute(:cat, 'loom_test_file')
 
+  ctx.mods.files.write!('loom_write_new_file', 'overwritten data')
+  cat 'loom_write_new_file'
+  rm 'loom_write_new_file'
+
   ctx.mods.files.write('loom_write_new_file', 'wrote some data')
-  ctx.mods.files.cat('loom_write_new_file')
+  cat 'loom_write_new_file'
 
   # sudo not implemented yet
   #as :root do

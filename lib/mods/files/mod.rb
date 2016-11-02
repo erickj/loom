@@ -6,52 +6,42 @@ class Loom::Mods::Files < Loom::Module::Mod
     @paths = [paths].flatten.compact
   end
 
-  action :cp do |*args|
-    "cp #{args.join ' '}"
-  end
-
-  action :mv do |*args|
-    "mv #{args.join ' '}"
-  end
-
   action :ls do |*args|
     if @paths.empty?
-      shell.execute :ls, *args
+      shell.ls *args
     else
       @paths.each do |p|
         args.unshift p
-        shell.execute :ls, *args
+        shell.ls *args
       end
     end
   end
 
   action :stat do |*args|
     if @paths.empty?
-      shell.execute :stat, *args
+      shell.stat *args
     else
       @paths.each do |p|
         args.unshift p
-        shell.execute :stat, *args
+        shell.stat *args
       end
     end    
   end
 
-  action :cat do |path|
-    shell.execute "cat #{path}"
-  end
-
   action :append do |path, text|
-    shell.verify "[ -f #{path} ]"
-    shell.execute "echo \"#{text}\" >> #{path}"
+    if shell.verify "[ -f #{path} ]"
+      shell.echo "\"#{text}\" >> #{path}"
+    end
   end
 
   action :write do |path, text|
-    shell.verify "[ ! -f \"#{path}\" ]"
-    write! path, text
+    if shell.verify "[ ! -f \"#{path}\" ]"
+      write! path, text
+    end
   end
 
   action :write! do |path, text|
-    shell.execute "echo \"#{text}\" > #{path}"
+    shell.echo "\"#{text}\" > #{path}"
   end
   alias_method :overwrite, :write!
 
