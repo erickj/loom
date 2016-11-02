@@ -21,6 +21,16 @@ module Loom::Mods
           for_paths *paths, :action => :touch
         end
 
+        action :cd do |_, mods, *paths, &block|
+          raise "no block for cd" unless block_given?
+
+          for_paths *paths do |p|
+            _.within p do
+              run_in_action_context self, *paths, &block
+            end
+          end
+        end
+
         action :mkdir do |_, mods, *paths, flags: nil, **opts|
           for_paths *paths, :action => :mkdir, :flags => flags
         end
@@ -43,21 +53,6 @@ module Loom::Mods
           _.echo "\"#{text}\" > #{path}"
         end
         alias_method :overwrite, :write!
-      end
-
-      module Dir
-        extend Loom::Module::ModBuilder
-
-        action :cd do |_, mods, *paths, &block|
-          cwd = _.pwd
-          puts "pwd is: #{cwd}"
-
-          for_paths *paths do |p|
-            _.cd p
-            block.call if block
-            _.cd cwd
-          end
-        end
       end
 
       module Rsync

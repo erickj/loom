@@ -6,15 +6,16 @@ module Loom
     module ModBuilder
       attr_accessor :namespace
 
-      def action(name, &block)
-        action_id = define_action_handler name, &block
+      def action(name, &action_body)
+        action_id = define_action_handler name, &action_body
         puts "defined action %s" % [namespaced_action(name)]
       end
 
-      def define_action_handler(name, &block)
-        define_method name do |*args|
-          puts "=> mod action: #{name}, args => #{args}"
-          run_in_action_context self, *args, &block
+      def define_action_handler(name, &action_body)
+        define_method name do |*args, &inner_block|
+          puts "=> mod action: #{name}, args => #{args}, inner_block => #{inner_block}"
+          Loom::Context::ActionContext.run(
+            action_binding_scope, inner_block, *args, &action_body)
           self
         end
       end
@@ -46,8 +47,8 @@ module Loom
         include ModBuilder
       end
 
-      def run_in_action_context(mod, *args, &block)
-        Loom::Context::ActionContext.run mod, *args, &block
+      def action_binding_scope
+        self
       end
     end
 
@@ -62,9 +63,9 @@ module Loom
         @mod_context = mod_context
       end
 
-      def run_in_action_context(mod, *args, &block)
+      def action_binding_scope
         raise 'missing mod_context' unless @mod_context
-        Loom::Context::ActionContext.run @mod_context, *args, &block
+        @mod_context
       end
     end
 

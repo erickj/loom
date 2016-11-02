@@ -27,10 +27,11 @@ on hosts do |_, mods, ctx|
 
   mods.files((1..3).to_a.map { |i| "./loom.tmp/dir.#{i}" })
     .mkdir(:flags => '-p')
-    .dir.cd do |_|
-    _.pwd
-  end
-#  return
+    .cd do |_| _.pwd end
+
+  # TODO: Fix LocalJumpError for `return`, due to f'd up
+  # action_hander/ActionContext binding w/ instance_exec
+  # return
 
 #  mods.files(['/usr', '/opt'])
 #    .ls

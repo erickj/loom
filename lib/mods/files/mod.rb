@@ -14,10 +14,6 @@ module Loom::Mods::Files
       include Actions::Rsync
     end
 
-    ns :dir do
-      include Actions::Dir
-    end
-
     private
     ##
     # Executes #{action} for each path in #{paths} or #{@paths}. If
