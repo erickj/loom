@@ -3,7 +3,7 @@ module Loom::Mods
   AnonymousModLoadError = Class.new(StandardError)
 
   class Module
-    attr_accessor :shell, :mods
+    attr_accessor :shell, :mods, :action_proxy
     alias_method :_, :shell
 
     class << self
@@ -26,16 +26,20 @@ module Loom::Mods
         define_method bound_method_name do |*args, &block|
           bound_method = unbound_method.bind self
           bound_method.call *args, &block
-          self
+          action_proxy.proxy_for_namespace namespace
         end
         puts "bound action #{action_name}"
 
         bound_method_name
       end
 
+      ##
+      # This needs more thought
       def action_proxy(mod)
-        @action_proxy_klass ||= ActionProxy.subclass_for_action_map action_map
-        @action_proxy_klass.new mod
+        @action_proxy_klasses ||= {}
+        @action_proxy_klasses[mod.class.hash] ||=
+          ActionProxy.subclass_for_action_map action_map
+        @action_proxy_klasses[mod.class.hash].new mod
       end
 
       private
@@ -59,12 +63,12 @@ module Loom::Mods
       def define_mod_factory(name, mod_klass)
         define_method name do |*args|
           mod = mod_klass.new *args
+          mod.action_proxy = mod_klass.action_proxy(mod)
 
           # self is a ModuleLoader
           mod.shell = @shell
           mod.mods = self 
-
-          mod_klass.action_proxy(mod)
+          mod.action_proxy
         end
         puts "defined_mod_factory #{name}"
       end

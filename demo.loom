@@ -41,7 +41,9 @@ end
 on quotes do |_, mods, host|
   _.pwd
 
-  mods.files.rsync.up './some/file/path'
+  mods.files.rsync
+    .up('./some/file/up')
+    .down('./some/file/down')
 
   mods.files
     .touch('./loom_test_file')

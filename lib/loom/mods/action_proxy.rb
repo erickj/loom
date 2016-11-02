@@ -6,6 +6,10 @@ module Loom::Mods
       @nested_action_proxies = {}
     end
 
+    def proxy_for_namespace(ns=nil)
+      ns.nil? ? self : @nested_action_proxies[ns]
+    end
+
     private
 
     class << self      
@@ -39,12 +43,15 @@ module Loom::Mods
       ##
       # This gets a bit tricky
       def install_namespace_action_proxies(action_map)
-        action_map.ns_actionmaps.each do |ns, action_map|
+        action_map.ns_actionmaps.each do |ns, ns_action_map|
+          @nested_action_proxy_klasses ||= {}
+          @nested_action_proxy_klasses[self.hash] ||= {}
+          @nested_action_proxy_klasses[self.hash][ns] ||=
+            ActionProxy.subclass_for_action_map ns_action_map
+          action_proxy_klass = @nested_action_proxy_klasses[self.hash][ns]
+
           define_method ns do
-            unless @nested_action_proxies[ns]
-              @nested_action_proxies[ns] ||= ActionProxy.subclass_for_action_map action_map
-            end
-            @nested_action_proxies[ns].new @mod
+            @nested_action_proxies[ns] ||= action_proxy_klass.new @mod
           end
           puts "defined action proxy ns: #{ns}"
         end
