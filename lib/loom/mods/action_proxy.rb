@@ -36,8 +36,9 @@ module Loom::Mods
           define_method public_action_name do |*args, &block|
             @mod.send bound_action_name, *args, &block
           end
-          Loom.log.debug(
-            "defined action proxy action: #{public_action_name} => #{bound_action_name}")
+          Loom.log.debug2 self do
+            "defined action proxy action: #{public_action_name} => #{bound_action_name}"
+          end
         end
       end
 
@@ -54,7 +55,9 @@ module Loom::Mods
           define_method ns do
             @nested_action_proxies[ns] ||= action_proxy_klass.new @mod
           end
-          Loom.log.debug { "defined action proxy ns: #{ns}" }
+          Loom.log.debug2 self do
+            "defined action proxy ns: #{ns}"
+          end
         end
       end
 

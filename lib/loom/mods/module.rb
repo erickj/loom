@@ -24,14 +24,14 @@ module Loom::Mods
         bound_method_name = [namespace, action_name].compact.join '_'
 
         define_method bound_method_name do |*args, &block|
-          Loom.log.debug { "executing mod action #{self.class}##{bound_method_name}" }
+          Loom.log.debug1(self) { "executing mod action #{self.class}##{bound_method_name}" }
 
           bound_method = unbound_method.bind self
           bound_method.call *args, &block
 
           action_proxy.proxy_for_namespace namespace
         end
-        Loom.log.debug { "bound action #{action_name}" }
+        Loom.log.debug2(self) { "bound action #{action_name}" }
 
         bound_method_name
       end

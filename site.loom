@@ -1,11 +1,11 @@
-include Loom::Pattern
+include Loom::Pattern::Container
 
 def uptime(_, mods, ctx)
   puts _.uptime
 end
 
 module SSH
-  include Loom::Pattern
+  include Loom::Pattern::Container
 
   def harden(_, mods, ctx)
     puts "so hard for #{host}"
@@ -13,7 +13,7 @@ module SSH
 end
 
 module Users
-  include Loom::Pattern
+  include Loom::Pattern::Container
 
   def init(_, mods, ctx)
     puts "initing users"

@@ -1,7 +1,9 @@
 ---
-- vm-ubuntu-db
-- vm-ubuntu-base
 - ejjohnson.org
+
+- :local-vms:
+    - vm-ubuntu-db
+    - vm-ubuntu-base
 - :digitalocean:
     - ejjohnson.net
     - vos.io

@@ -9,14 +9,16 @@ module Loom
 
     CONFIG_VARS = {
       :inventory_roots => ['/etc/loom', './loom'],
+      :inventory_all_hosts => false,
+      :inventory_hosts => [],
+      :inventory_host_groups => [],
+
       :loom_files => ['./site.loom'],
 
       :loom_ssh_user => 'deploy', # Can be overriden per host
-      :loom_ssh_port => 22, # Can be overriden per host
-      :loom_hosts => [],
-      :loom_host_groups => [],
 
-      :log_level => :warn, # [debug, info, warn, error, fatal]
+
+      :log_level => :warn, # [debug, info, warn, error, fatal, or Integer]
       :log_device => :stderr, # [stderr, stdout, file descriptor, or file name]
       :log_colorize => true,
 

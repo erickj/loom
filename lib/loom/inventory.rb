@@ -6,21 +6,26 @@ module Loom
     InvalidHostEntry = Class.new StandardError
     InventoryFileEntryError = Class.new StandardError
 
-    INVENTORY_FILE_GLOB = "inventory.*"
-
-    class << self
-      def total_inventory
-        inventory_fileset = InventoryFileSet.new Loom.config.inventory_roots
-        InventoryList.new hostlistinventory_fileset.hostlist, inventory_fileset.hostgroups
-      end
-
-      def active_inventory
-        explicit_hostlist = Loom.config.loom_hosts
-        InventoryList.new explicit_hostlist
-      end
-    end
+    INVENTORY_FILE_NAMES = [
+      "inventory.yml",
+      "inventory.yaml"
+    ]
 
     class InventoryList
+
+      class << self
+        def total_inventory(loom_config)
+          inventory_fileset = InventoryFileSet.new loom_config.inventory_roots
+          InventoryList.new inventory_fileset.hostlist, inventory_fileset.hostgroups
+        end
+
+        ##
+        # The list of hosts to apply patterns to
+        def active_inventory(loom_config)
+          explicit_hostlist = loom_config.inventory_hosts
+          InventoryList.new explicit_hostlist
+        end
+      end
 
       attr_reader :hosts
 
@@ -32,12 +37,8 @@ module Loom
       def parse_hosts(list)
         list.map do |hoststring|
           raise InvalidHostEntry, hoststring.class.name unless hoststring.is_a? String
-          host = parse hoststring
+          HostSpec.new hoststring
         end
-      end
-
-      def parse(hoststring)
-        SSHKit::Host.new hoststring
       end
 
       def hostnames
@@ -55,14 +56,14 @@ module Loom
         @roots = roots
 
         inventory_file_paths = @roots.map do |root|
-          search_glob = File.join root, "**", INVENTORY_FILE_GLOB
-          Loom.log.debug { "searching inventory glob: #{search_glob}" }
-
-          Dir.glob search_glob
+          search_globs = INVENTORY_FILE_NAMES.map do |name|
+            File.join root, "**", name
+          end
+          Dir.glob search_globs
         end.flatten.map { |p| File.realpath p}
 
         @raw_inventories = inventory_file_paths.map do |path|
-          Loom.log.info "loading inventory file #{path}"
+          Loom.log.debug "loading inventory file #{path}"
           YAML.load_file path
         end
       end

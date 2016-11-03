@@ -11,3 +11,7 @@ gem 'net-ssh', '>= 4.0.0.beta2'
 # also need these explicit gems for ed25519 for now
 gem 'rbnacl-libsodium'
 gem 'bcrypt_pbkdf'
+
+group :test do
+  gem 'rspec'
+end

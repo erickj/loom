@@ -1,78 +1,29 @@
 module Loom::Pattern
 
-  SiteFileNotFound = Class.new StandardError
-  UnknownPattern = Class.new StandardError
+  module Container
+    # DO NOT ADD METHODS TO THIS MODULE!!!
 
-  @loaded_pattern_slugs = {}
+    class << self
+      def included(pattern_mod)
+        Loom.log.debug2(self) { "pattern module found => #{pattern_mod}" }
+      end
 
-  class << self
-    attr_reader :included_in, :pattern_slugs, :loaded_pattern_slugs
+      ##
+      # Registers methods as they're added to Pattern::Container
+      # modules as patterns
+      def method_added(method_name)
+        # shell_module = Loom::Pattern::Shell
+        # pattern_slug = "#{self.name}:#{shell_module.name}".
+        #                  gsub(/^#{prefix}/, "").
+        #                  gsub(/^:+/, "").
+        #                  downcase
 
-    def included(pattern_mod)
-      pattern_mod.extend PatternTracker
-      Loom.log.debug { "Loom::Patttern included in #{pattern_mod}" }
-    end
-
-    def method_for_slug(slug)
-      @loaded_pattern_slugs[slug]
-    end
-  end
-
-  module PatternTracker
-    def method_added(method)
-      pattern_slug =
-        "#{self.name}:#{method}".gsub(/^Loom::Pattern::Shell/, "").gsub(/^:+/, "").downcase
-
-      Loom::Pattern.loaded_pattern_slugs[pattern_slug] = method
-      Loom.log.debug { "pattern method_added => #{pattern_slug}" }
-    end
-  end
-
-  class Shell
-    # Intentionally left empty - used to load patterns into.
-  end
-
-  class Runner
-    include Loom::DSL
-
-    def initialize(pattern_slugs=[])
-      @pattern_slugs = pattern_slugs
-      @loom_pattern_files = Loom.config.loom_files
-      load_patterns
-    end
-
-    def run
-      inventory = Loom::Inventory.active_inventory
-      active_hosts = inventory.hosts
-
-      @pattern_slugs.each do |pattern|
-        method = Loom::Pattern.method_for_slug pattern
-        raise UnknownPattern, pattern unless method
-
-        on active_hosts do |shell, mods, host|
-          Loom.log.info "#{host.hostname} => #{pattern}"
-          binding_object = Shell.new
-          binding_object.send method, shell, mods, host
-        end
-
+        # Loom::Pattern.loaded_pattern_slugs[pattern_slug] = method
       end
     end
 
-    def patterns
-      Loom::Pattern.loaded_pattern_slugs.keys
-    end
-
-    private
-    def load_patterns
-      @loom_pattern_files.each do |f|
-        raise SiteFileNotFound, f unless File.exists? f
-        load_site_file f
-      end
-    end
-
-    def load_site_file(f)
-      Loom.log.debug "loading site file #{File.realpath f} into shell"
-      Shell.module_eval File.read f
-    end
+    # DO NOT ADD METHODS TO THIS MODULE!!!
   end
 end
+
+require_relative "pattern/all"

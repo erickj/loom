@@ -1,11 +1,8 @@
 #!/usr/bin/env ruby
 $: << 'lib'
 
-require 'sshkit'
 require 'commander'
-
 require 'loom'
-require 'coremods/all'
 
 Loom.configure do |c|
   c.log_level = :info
@@ -16,59 +13,86 @@ module Loom
     include Commander::Methods
 
     def run
-      program :name, "Loom"
+      program :name, "Loom - Weaving through infrastructure"
       program :version , Loom::VERSION
-      program :description, "Weaving through infrastructure."
+      program :description, <<EOS
+A lightweight infrastructure managment tool designed to manage hosts
+through SSH, loosely inspired by Python Fabric - http://www.fabfile.org/.
 
-      global_option "-d", "Enable loom debug logging" do |debug|
-        Loom.configure do |c|
-          c.log_level = :debug if debug
-        end
+Try `loom weave uptime -H localhost` to see an example.
+EOS
+
+      global_option "-d", "Enable loom debug logging" do
+        Loom.configure { |c| c.log_level = :debug }
+      end
+
+      global_option "--dd DEBUG_LEVEL", Integer,
+                    "Enable loom debug logging, supply an optional LEVEL " +
+                    "0-6 for more details" do |debug_level|
+        raise 'debug level must be >= 0' unless debug_level >= 0
+        Loom.configure { |c| c.log_level = debug_level * -1 }
       end
 
       global_option "-l", "--loom-files FILES", Array,
                     "Load loom files from FILES instead of #{Loom.config.loom_files}" do |files|
-        Loom.configure do |c|
-          c.loom_files = files
-        end
+        Loom.configure { |c| c.loom_files = files }
       end
 
-      global_option "-H", "--hosts HOSTS", Array, "Hostnames to apply patterns to" do |h|
-        Loom.configure do |c|
-          c.loom_hosts = h
-        end
+      global_option "-a", "--all-hosts",
+                    "Adds all known hostnames to the active inventory, " +
+                    "can be combined with -H for additional hosts" do |flag|
+        Loom.configure { |c| c.inventory_all_hosts = flag }
       end
 
-      global_option "-G", "--groups GROUPS", Array, "Groups to apply patterns to" do |g|
-        Loom.configure do |c|
-          c.loom_host_groups = g
-        end
+      global_option "-H", "--hosts HOSTS", Array,
+                    "Adds HOSTS to the active inventory" do |hosts|
+        Loom.configure { |c| c.inventory_hosts = hosts }
+      end
+
+      global_option "-G", "--host-groups GROUPS", Array,
+                    "Adds hostnames in GROUPS to the active inventory" do |groups|
+        Loom.configure { |c| c.inventory_host_groups = groups }
       end
 
       global_option "-p", "--ssh-port PORT", Integer,
                      "Overrides standard SSH port 22, this can also be set per host" do |p|
-        Loom.configure do |c|
-          puts 'in port'
-          c.loom_ssh_port = p
-        end
+        Loom.configure { |c| c.loom_ssh_port = p }
       end
 
       global_option "-u", "--ssh-user USER", String,
-                     "Override the standard SSH user, #{Loom.config.loom_ssh_user}, " +
-                     "this can also be set per host" do |u|
+                     "Overrides the standard SSH user, #{Loom.config.loom_ssh_user}, " +
+                     "this can also be set per host as part of the host string" do |u|
         Loom.configure do |c|
           puts 'in user'
           c.loom_ssh_user = u
         end
       end
 
-      command :"do" do |c|
-        c.syntax = "loom do pattern... [options]"
-        c.description = "Applies the patterns."
+      default_command :weave
+
+      command :"weave" do |c|
+        c.syntax = "loom weave [pattern...] [options]"
+        c.description = "Applies the patterns to the active host inventory. " +
+                        "This is the default."
+
+        c.option "-n", "--dry-run",
+                 "Don't run the patterns, only connect and log the expected patterns"
+        c.option "-P", "--list-patterns",
+                 "List all known patterns, ignores all other arguments"
+
         c.action do |patterns, options|
-          Loom::Pattern::Runner.new(patterns).run
+          if options.list_patterns
+            puts "Loaded Patterns:"
+            loader = Loom::Pattern::Loader.configure Loom.config
+            puts loader.loaded_patterns.to_yaml
+          else
+            runner = Loom::Runner.new Loom.config, patterns
+            runner.run options.dry_run
+          end
+
         end
       end
+      alias_command :"w", :"weave"
 
       command :"config" do |c|
         c.syntax = "loom config [options]"
@@ -77,45 +101,31 @@ module Loom
           puts Loom.config.to_yaml
         end
       end
+      alias_command :"c", :"config"
 
-      command :"list hosts" do |c|
-        c.syntax = "loom list hosts [options]"
+      command :"inventory" do |c|
+        c.syntax = "loom inventory [options]"
         c.description = "List all hosts in the inventory."
+
+        c.option "--active",
+                 "Restricts to the hosts in the active inventory, " +
+                 "this is useful to check which hosts will be targeted " +
+                 "with the config."
+
         c.action do |arg, options|
-          inventory = Loom::Inventory.total_inventory
-          puts "Hosts:"
-          puts inventory.hostnames.to_yaml
-          puts
-          puts "Groups:"
-          puts inventory.group_names.to_yaml
+          inventory = if options.active
+                        Loom::Inventory::InventoryList.active_inventory Loom.config
+                      else
+                        Loom::Inventory::InventoryList.total_inventory Loom.config
+                      end
+          puts inventory.hostnames.sort.to_yaml
         end
       end
-
-      command :"patterns" do |c|
-        c.syntax = "loom patterns [options]"
-        c.description = "Lists all known patterns."
-        c.action do
-          puts "Patterns:"
-          Loom::Pattern::Runner.new.patterns.each do |p|
-            puts p
-          end
-        end
-      end
-
-      # Patterns.pattern_methods.each do |p|
-      #   command "pattern #{p}" do |c|
-      #     c.syntax = "loom pattern #{p} [options]"
-      #     c.action do
-      #       Patterns.instance_method(p).bind(Object.new).call :a, :b, :c
-      #     end
-      #   end
-      # end
+      alias_command :"i", :"inventory"
 
       run!
     end
   end
 end
 
-if $0 == __FILE__
-  Loom::Cli.new.run
-end
+Loom::Cli.new.run if $0 == __FILE__

@@ -1,3 +1,5 @@
+require "sshkit"
+
 module Loom
   class Shell
 
@@ -22,7 +24,7 @@ module Loom
 
     def capture(*args, &block)
       Loom.log.debug { "$ #{args}" }
-      @sshkit_backend.capture *args, &block 
+      @sshkit_backend.capture *args, &block
     end
     alias_method :execute, :capture
 
@@ -30,7 +32,7 @@ module Loom
       define_method method do |*args, &block|
         @sshkit_backend.send method, *args, &block
       end
-    end    
+    end
   end
 
   class LocalShell < Shell
