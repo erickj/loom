@@ -22,7 +22,7 @@ through SSH, loosely inspired by Python Fabric - http://www.fabfile.org/.
 Try `loom weave uptime -H localhost` to see an example.
 EOS
 
-      global_option "-d", "Enable loom verbose logging" do
+      global_option "-d", "--verbose", "Enable loom verbose logging" do
         Loom.configure { |c| c.log_level = :debug }
       end
 

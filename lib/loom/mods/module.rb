@@ -1,6 +1,6 @@
 module Loom::Mods
 
-  AnonymousModLoadError = Class.new(StandardError)
+  AnonymousModLoadError = Class.new Loom:: LoomError
 
   class Module
     attr_accessor :shell, :mods, :action_proxy

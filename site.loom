@@ -1,14 +1,20 @@
 include Loom::Pattern::Container
 
 def uptime(_, mods, ctx)
-  puts _.uptime
+  _.uptime
+  _.execute "echo out 1>&2"
+end
+
+def fail(_, mods, ctx)
+  _.false
+  _.execute "echo out 1>&2"
 end
 
 module SSH
   include Loom::Pattern::Container
 
   def harden(_, mods, ctx)
-    puts "so hard for #{host}"
+    _.echo "so hard for #{ctx}"
   end
 end
 

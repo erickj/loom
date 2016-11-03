@@ -3,8 +3,8 @@ require 'yaml'
 module Loom
   module Inventory
 
-    InvalidHostEntry = Class.new StandardError
-    InventoryFileEntryError = Class.new StandardError
+    InvalidHostEntry = Class.new Loom::LoomError
+    InventoryFileEntryError = Class.new Loom::LoomError
 
     INVENTORY_FILE_NAMES = [
       "inventory.yml",
@@ -26,8 +26,6 @@ module Loom
         ##
         # The list of hosts to apply patterns to
         def active_inventory(loom_config)
-          Loom.log.debug6(self) { "#active_inventory config => #{loom_config.dump}" }
-
           return total_inventory loom_config if loom_config.inventory_all_hosts
 
           fileset = InventoryFileSet.new loom_config.inventory_roots
@@ -49,6 +47,15 @@ module Loom
 
         all_hosts = hostgroup_map.values.flatten + hostlist
         @hosts = parse_hosts(all_hosts).uniq { |h| h.hostname }
+        @disabled_hosts = {}
+      end
+
+      def disable(hostname)
+        @disabled_hosts[hostname] = true
+      end
+
+      def disabled?(hostname)
+        @disabled_hosts[hostname]
       end
 
       def parse_hosts(list)

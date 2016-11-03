@@ -3,11 +3,12 @@ require "sshkit"
 
 module Loom
 
-  UnparseableHostStringError = Class.new StandardError
+  UnparseableHostStringError = Class.new Loom::LoomError
 
   class HostSpec
     extend Forwardable
 
+    attr_accessor :disabled
     attr_reader :sshkit_host
 
     def initialize(host_string)

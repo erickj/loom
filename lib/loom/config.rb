@@ -3,7 +3,7 @@ require 'yaml'
 
 module Loom
 
-  ConfigError = Class.new StandardError
+  ConfigError = Class.new Loom::LoomError
 
   class Config
 
@@ -49,6 +49,9 @@ module Loom
 
     class << self
       def configure(config=nil, &block)
+        # do NOT call Loom.log inside this block, the logger may not be
+        # configured, triggering an infinite recursion
+
         map = config ? config.config_map : CONFIG_VARS.dup
         config_struct = OpenStruct.new **map
         yield config_struct if block_given?

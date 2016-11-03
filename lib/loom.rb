@@ -1,5 +1,6 @@
 module Loom
-  StandardError = Class.new(::StandardError)
+
+  LoomError = Class.new ::StandardError
 
   class << self
     def configure(&block)

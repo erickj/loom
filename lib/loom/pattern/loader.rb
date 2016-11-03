@@ -1,11 +1,10 @@
 module Loom::Pattern
 
-  SiteFileNotFound = Class.new StandardError
-  UnknownPattern = Class.new StandardError
-  PollutedPatternContainer = Class.new StandardError
+  SiteFileNotFound = Class.new Loom::LoomError
+  UnknownPattern = Class.new Loom::LoomError
+  PollutedPatternContainer = Class.new Loom::LoomError
 
   class Loader
-
     class << self
       def configure(config)
         loader = Loader.new config.loom_files
@@ -59,18 +58,17 @@ module Loom::Pattern
                 "PatternContainer <#{shell_module.name}> should include no other modules"
         end
 
+        trimmed_module_name = PatternNameTrimer.trim_shell_from_module_name shell_module
         shell_module.instance_methods.each do |pattern_method_name|
           unbound_method = shell_module.instance_method pattern_method_name
 
           # Cleanup the slug name from the fully qualified
           # Loom::Pattern::Loader::Shell namespace, leaving any
           # submodules and method names.
-          pattern_slug = "#{shell_module.name}:#{pattern_method_name}"
-                           .gsub(/^#{Shell.name}:/, '')
-                           .gsub(/^:/, '')
-                           .downcase
+          pattern_slug = PatternNameTrimer.create_pattern_slug \
+            trimmed_module_name, pattern_method_name
 
-          ref = PatternReference.new pattern_slug, unbound_method
+          ref = PatternReference.new pattern_slug, unbound_method, trimmed_module_name
           add_pattern_ref ref
         end
       end
@@ -83,8 +81,26 @@ module Loom::Pattern
     end
 
     def add_pattern_ref(pattern_ref)
-      Loom.log.debug3(self) { "registered pattern ref => #{pattern_ref.slug}" }
+      Loom.log.debug2(self) { "#add_pattern_ref => #{pattern_ref.slug}" }
       @pattern_ref_map[pattern_ref.slug] = pattern_ref
+    end
+
+    class PatternNameTrimer
+      using Loom::CoreExt
+
+      class << self
+        def trim_shell_from_module_name(pattern_module)
+          "#{pattern_module.name}".gsub(/^#{Shell.name}/, '').gsub(/^[\W]+/, '').strip
+        end
+
+        def create_pattern_slug(trimmed_module_name, pattern_method_name)
+          [trimmed_module_name, pattern_method_name]
+            .delete_if(&:empty?)
+            .map(&:to_s)
+            .map { |s| s.underscore } # don't use &: here, it doesn't play well with refinement
+            .join ":"
+        end
+      end
     end
 
     module Shell

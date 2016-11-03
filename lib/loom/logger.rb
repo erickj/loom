@@ -58,8 +58,8 @@ module Loom
         lambda do |severity, datetime, progname, msg|
           s_key = severity[0].downcase.to_sym
           if colorize && COLOR_MAP[s_key]
-            severity = Colorizer.send COLOR_MAP[s_key], severity
-            progname = progname.nil? ? progname : Colorizer.dark_gray(progname)
+            severity = Styleizer.apply severity, COLOR_MAP[s_key]
+            progname = Styleizer.apply progname, :bold, :dark_gray
           end
 
           if progname
@@ -106,42 +106,29 @@ module Loom
       end
     end
 
-    class Colorizer
+    class Styleizer
       class << self
-        def colorize(color_code, str)
+
+        STYLE_CODES = {
+          :bold => 1,
+          :red => 31,
+          :green => 32,
+          :yellow => 33,
+          :blue => 34,
+          :pink => 35,
+          :light_blue => 36,
+          :light_gray => 37,
+          :dark_gray => 90
+        }
+
+        def apply(str, *styles)
+          return str unless str
+          styles.reduce(str) { |str, style| styleize STYLE_CODES[style], str }
+        end
+
+        private
+        def styleize(color_code, str)
           "\e[#{color_code}m#{str}\e[0m"
-        end
-
-        def red(str)
-          colorize 31, str
-        end
-
-        def green(str)
-          colorize 32, str
-        end
-
-        def yellow(str)
-          colorize 33, str
-        end
-
-        def blue(str)
-          colorize 34, str
-        end
-
-        def pink(str)
-          colorize 35, str
-        end
-
-        def light_blue(str)
-          colorize 36, str
-        end
-
-        def light_gray(str)
-          colorize 37, str
-        end
-
-        def dark_gray(str)
-          colorize 90, str
         end
       end
     end
