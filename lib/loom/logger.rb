@@ -48,7 +48,7 @@ module Loom
           s_code = severity[0]
           if colorize && COLOR_MAP[severity.downcase.to_sym]
             s_code = Colorizer.send COLOR_MAP[severity.downcase.to_sym], s_code
-          end        
+          end
           "[%s] %s\n" % [s_code, msg]
         end
       end

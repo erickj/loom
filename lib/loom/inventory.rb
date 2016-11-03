@@ -10,17 +10,21 @@ module Loom
 
     class << self
       def total_inventory
-        config_hostlist = Loom.config.loom_hosts
         inventory_fileset = InventoryFileSet.new Loom.config.inventory_roots
+        InventoryList.new hostlistinventory_fileset.hostlist, inventory_fileset.hostgroups
+      end
 
-        hostlist = config_hostlist + inventory_fileset.hostlist
-        InventoryList.new hostlist, inventory_fileset.hostgroups
+      def active_inventory
+        explicit_hostlist = Loom.config.loom_hosts
+        InventoryList.new explicit_hostlist
       end
     end
 
     class InventoryList
 
-      def initialize(hostlist, hostgroups)
+      attr_reader :hosts
+
+      def initialize(hostlist, hostgroups={})
         @hosts = parse_hosts(hostlist).uniq { |h| h.hostname }
         @hostgroups = hostgroups
       end

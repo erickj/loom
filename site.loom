@@ -1,6 +1,7 @@
 include Loom::Pattern
 
-def hostname(_, mods, ctx)
+def uptime(_, mods, ctx)
+  puts _.uptime
 end
 
 module SSH

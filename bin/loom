@@ -65,10 +65,8 @@ module Loom
       command :"do" do |c|
         c.syntax = "loom do pattern... [options]"
         c.description = "Applies the patterns."
-        c.action do |*args|
-          puts "start do"
-          puts args.inspect
-          puts "end do"
+        c.action do |patterns, options|
+          Loom::Pattern::Runner.new(patterns).run
         end
       end
 
@@ -97,7 +95,8 @@ module Loom
         c.syntax = "loom patterns [options]"
         c.description = "Lists all known patterns."
         c.action do
-          Loom::Pattern.pattern_slugs.each do |p|
+          puts "Patterns:"
+          Loom::Pattern::Runner.new.patterns.each do |p|
             puts p
           end
         end
@@ -113,17 +112,6 @@ module Loom
       # end
 
       run!
-    end
-
-    module Patterns
-      class << self
-        def load_site
-          module_eval File.read("site.loom")
-          true
-        end
-      end
-
-      load_site
     end
   end
 end
