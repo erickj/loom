@@ -15,10 +15,11 @@ module Loom::Pattern
 
   module PatternTracker
     def method_added(m)
-      method_slug = "#{self.name}:#{m}".gsub(/^LoomCli::Patterns/, "").gsub(/^:+/, "").downcase
+      method_slug =
+        "#{self.name}:#{m}".gsub(/^LoomCli::Patterns/, "").gsub(/^:+/, "").downcase
 
       Loom::Pattern.pattern_slugs << method_slug
-      puts "pattern method_added => #{method_slug}"
+      Loom.log.debug { "pattern method_added => #{method_slug}" }
 #      Loom::Pattern.pattern_methods[self.name] ||= []
 #      Loom::Pattern.pattern_methods[self.name] << m
     end

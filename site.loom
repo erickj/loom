@@ -1,7 +1,3 @@
-Loom.configure do |c|
-  c.log_level = :debug
-end
-
 include Loom::Pattern
 
 def hostname(_, mods, ctx)

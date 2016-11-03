@@ -3,7 +3,7 @@ module Loom
 
   class << self
     def configure(&block)
-      @config = Loom::Config.configure &block
+      @config = Loom::Config.configure @config, &block
       config_changed
     end
 
@@ -22,6 +22,7 @@ module Loom
     private
     def config_changed
       SSHKit.config.output_verbosity = config.sshkit_log_level
+      @logger = nil
     end
 
     def config_logger

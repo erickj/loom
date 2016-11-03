@@ -12,10 +12,7 @@ module Loom
 
     class << self
       def configure(config)
-        device = config.log_device
-        if device.is_a? String
-          device = File.open device, 'a'
-        end
+        device = configure_device config.log_device
 
         logger = ::Logger.new device
         logger.level = ::Logger.const_get config.log_level.upcase
@@ -28,6 +25,22 @@ module Loom
         end
 
         logger
+      end
+
+      private
+      def configure_device(device_value)
+        case device_value
+        when :stderr
+          STDERR
+        when :stdout
+          STDOUT
+        when Integer
+          IO.new device_value, 'a'
+        when String
+          File.new device_value 'a'
+        else
+          raise ConfigError, "log_device => #{device_value}"
+        end
       end
 
       def default_formatter(colorize)

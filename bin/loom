@@ -7,75 +7,120 @@ require 'commander'
 require 'loom'
 require 'coremods/all'
 
-class LoomCli
-  include Commander::Methods
+Loom.configure do |c|
+  c.log_level = :info
+end
 
-  def run
-    program :name, "Loom"
-    program :version , Loom::VERSION
-    program :description, "Weaving through infrastructure."
+module Loom
+  class Cli
+    include Commander::Methods
 
-    command :"list hosts" do |c|
-      c.syntax = "loom list hosts [options]"
-      c.description = "Displays all hosts in the inventory."
-      c.action do |arg, options|
-        say "hosts: h1,h2,h3"
-      end
-    end
+    def run
+      program :name, "Loom"
+      program :version , Loom::VERSION
+      program :description, "Weaving through infrastructure."
 
-    command :"list guests" do |c|
-      c.syntax = "loom list guests [options]"
-      c.description = "Displays all guests in the inventory."
-      c.action do |arg, options|
-        say "guests: g1,g2,g3"
-      end
-    end
-
-    command :"list" do |c|
-      c.syntax = "loom list [options]"
-      c.description = "Lists all known patterns."
-      c.action do
-        Loom::Pattern.pattern_slugs.each do |p|
-          puts p
+      global_option "-l", "--loom-files FILES", Array,
+                    "Load loom files from FILES instead of #{Loom.config.loom_files}" do |files|
+        Loom.configure do |c|
+          c.loom_files = files
         end
       end
-    end
-
-    command :"do" do |c|
-      c.syntax = "loom do [options]"
-      c.description = "Applies a pattern."
-      c.action do |*args|
-        puts "start do"
-        puts args.inspect
-        puts "end do"
+      global_option "-H", "--hosts HOSTS", Array, "Hostnames to apply patterns to" do |h|
+        Loom.configure do |c|
+          c.loom_hosts = h
+        end
       end
-    end
-
-    # Patterns.pattern_methods.each do |p|
-    #   command "pattern #{p}" do |c|
-    #     c.syntax = "loom pattern #{p} [options]"
-    #     c.action do 
-    #       Patterns.instance_method(p).bind(Object.new).call :a, :b, :c
-    #     end
-    #   end
-    # end
-
-    run!
-  end
-
-  module Patterns
-    class << self
-      def load_site
-        module_eval File.read("site.loom")
-        true
+      global_option "-G", "--groups GROUPS", Array, "Groups to apply patterns to" do |g|
+        Loom.configure do |c|
+          c.loom_host_groups = g
+        end
       end
+      global_option "-p", "--ssh-port PORT", Integer,
+                     "Overrides standard SSH port 22, this can also be set per host" do |p|
+        Loom.configure do |c|
+          puts 'in port'
+          c.loom_ssh_port = p
+        end
+      end
+      global_option "-u", "--ssh-user USER", String,
+                     "Override the standard SSH user, #{Loom.config.loom_ssh_user}, " +
+                     "this can also be set per host" do |u|
+        Loom.configure do |c|
+          puts 'in user'
+          c.loom_ssh_user = u
+        end
+      end
+
+      command :"do" do |c|
+        c.syntax = "loom do pattern... [options]"
+        c.description = "Applies the patterns."
+        c.action do |*args|
+          puts "start do"
+          puts args.inspect
+          puts "end do"
+        end
+      end
+
+      command :"config" do |c|
+        c.syntax = "loom config"
+        c.description = "Print the config."
+        c.action do
+          puts Loom.config.to_yaml
+        end
+      end
+
+      command :"list hosts" do |c|
+        c.syntax = "loom list hosts [options]"
+        c.description = "List all hosts in the inventory."
+        c.action do |arg, options|
+          say "hosts: h1,h2,h3"
+        end
+      end
+
+      command :"list groups" do |c|
+        c.syntax = "loom list guests [options]"
+        c.description = "List all guests in the inventory."
+        c.action do |arg, options|
+          say "guests: g1,g2,g3"
+        end
+      end
+
+      command :"patterns" do |c|
+        c.syntax = "loom patterns [options]"
+        c.description = "Lists all known patterns."
+        c.action do
+          Loom::Pattern.pattern_slugs.each do |p|
+            puts p
+          end
+        end
+      end
+
+      # Patterns.pattern_methods.each do |p|
+      #   command "pattern #{p}" do |c|
+      #     c.syntax = "loom pattern #{p} [options]"
+      #     c.action do
+      #       Patterns.instance_method(p).bind(Object.new).call :a, :b, :c
+      #     end
+      #   end
+      # end
+
+      run!
     end
 
-    load_site
-  end
+    module Patterns
+      class << self
+        def load_site
+          module_eval File.read("site.loom")
+          true
+        end
+      end
 
+      load_site
+    end
+  end
 end
 
 if $0 == __FILE__
-  LoomCli.new.run 
+  Loom::Cli.new.run
 end
