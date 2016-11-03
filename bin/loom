@@ -20,22 +20,31 @@ module Loom
       program :version , Loom::VERSION
       program :description, "Weaving through infrastructure."
 
+      global_option "-d", "Enable loom debug logging" do |debug|
+        Loom.configure do |c|
+          c.log_level = :debug if debug
+        end
+      end
+
       global_option "-l", "--loom-files FILES", Array,
                     "Load loom files from FILES instead of #{Loom.config.loom_files}" do |files|
         Loom.configure do |c|
           c.loom_files = files
         end
       end
+
       global_option "-H", "--hosts HOSTS", Array, "Hostnames to apply patterns to" do |h|
         Loom.configure do |c|
           c.loom_hosts = h
         end
       end
+
       global_option "-G", "--groups GROUPS", Array, "Groups to apply patterns to" do |g|
         Loom.configure do |c|
           c.loom_host_groups = g
         end
       end
+
       global_option "-p", "--ssh-port PORT", Integer,
                      "Overrides standard SSH port 22, this can also be set per host" do |p|
         Loom.configure do |c|
@@ -43,6 +52,7 @@ module Loom
           c.loom_ssh_port = p
         end
       end
+
       global_option "-u", "--ssh-user USER", String,
                      "Override the standard SSH user, #{Loom.config.loom_ssh_user}, " +
                      "this can also be set per host" do |u|
@@ -63,7 +73,7 @@ module Loom
       end
 
       command :"config" do |c|
-        c.syntax = "loom config"
+        c.syntax = "loom config [options]"
         c.description = "Print the config."
         c.action do
           puts Loom.config.to_yaml
@@ -74,15 +84,12 @@ module Loom
         c.syntax = "loom list hosts [options]"
         c.description = "List all hosts in the inventory."
         c.action do |arg, options|
-          say "hosts: h1,h2,h3"
-        end
-      end
-
-      command :"list groups" do |c|
-        c.syntax = "loom list guests [options]"
-        c.description = "List all guests in the inventory."
-        c.action do |arg, options|
-          say "guests: g1,g2,g3"
+          inventory = Loom::Inventory.total_inventory
+          puts "Hosts:"
+          puts inventory.hostnames.to_yaml
+          puts
+          puts "Groups:"
+          puts inventory.group_names.to_yaml
         end
       end
 
