@@ -2,7 +2,7 @@
 source "https://rubygems.org"
 
 gem 'sshkit', '~> 1.11'
-gem 'thor'
+gem 'commander'
 
 # net-ssh beta until for ed25519 elliptic curve key support
 # https://github.com/net-ssh/net-ssh/issues/214

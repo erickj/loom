@@ -28,7 +28,7 @@ module Loom::Mods
           bound_method.call *args, &block
           action_proxy.proxy_for_namespace namespace
         end
-        puts "bound action #{action_name}"
+        #puts "bound action #{action_name}"
 
         bound_method_name
       end
@@ -70,7 +70,7 @@ module Loom::Mods
           mod.mods = self 
           mod.action_proxy
         end
-        puts "defined_mod_factory #{name}"
+        #puts "defined_mod_factory #{name}"
       end
 
       def register_module(klass)

@@ -8,7 +8,10 @@ include Loom::DSL
 #mod.files.cp "loom_test_file", "loom_other_file"
 #mod.files.mv "a", "b"
 
-SSHKit.config.output_verbosity = :debug
+Loom.configure do |c|
+  c.sshkit_log_level = :debug
+  c.log_level = :debug
+end
 
 local do 
   capture(:whoami)

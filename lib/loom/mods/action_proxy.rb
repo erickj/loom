@@ -36,7 +36,7 @@ module Loom::Mods
           define_method public_action_name do |*args, &block|
             @mod.send bound_action_name, *args, &block
           end
-          puts "defined action proxy action: #{public_action_name} => #{bound_action_name}"
+          #puts "defined action proxy action: #{public_action_name} => #{bound_action_name}"
         end
       end
 

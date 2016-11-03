@@ -1,0 +1,83 @@
+#!/usr/bin/env ruby
+$: << 'lib'
+
+require 'sshkit'
+require 'commander'
+
+require 'loom'
+require 'coremods/all'
+
+class LoomCli
+  include Commander::Methods
+
+  def run
+    program :name, "Loom"
+    program :version , Loom::VERSION
+    program :description, "Weaving through infrastructure."
+
+    command :"list hosts" do |c|
+      c.syntax = "loom list hosts [options]"
+      c.description = "Displays all hosts in the inventory."
+      c.action do |arg, options|
+        say "hosts: h1,h2,h3"
+      end
+    end
+
+    command :"list guests" do |c|
+      c.syntax = "loom list guests [options]"
+      c.description = "Displays all guests in the inventory."
+      c.action do |arg, options|
+        say "guests: g1,g2,g3"
+      end
+    end
+
+    command :"list" do |c|
+      c.syntax = "loom list [options]"
+      c.description = "Lists all known patterns."
+      c.action do
+        Loom::Pattern.pattern_slugs.each do |p|
+          puts p
+        end
+      end
+    end
+
+    command :"do" do |c|
+      c.syntax = "loom do [options]"
+      c.description = "Applies a pattern."
+      c.action do |*args|
+        puts "start do"
+        puts args.inspect
+        puts "end do"
+      end
+    end
+
+    # Patterns.pattern_methods.each do |p|
+    #   command "pattern #{p}" do |c|
+    #     c.syntax = "loom pattern #{p} [options]"
+    #     c.action do 
+    #       Patterns.instance_method(p).bind(Object.new).call :a, :b, :c
+    #     end
+    #   end
+    # end
+
+    run!
+  end
+
+  module Patterns
+    class << self
+      def load_site
+        module_eval File.read("site.loom")
+        true
+      end
+    end
+
+    load_site
+  end
+
+end
+
+if $0 == __FILE__
+  puts "detecting bundle wrapper"
+  puts $0
+#  LoomCli.new.run 
+end

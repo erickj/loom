@@ -1,0 +1,24 @@
+Loom.configure do |c|
+  c.log_level = :debug
+end
+
+include Loom::Pattern
+
+def hostname(_, mods, ctx)
+end
+
+module SSH
+  include Loom::Pattern
+
+  def harden(_, mods, ctx)
+    puts "so hard for #{host}"
+  end
+end
+
+module Users
+  include Loom::Pattern
+
+  def init(_, mods, ctx)
+    puts "initing users"
+  end
+end
