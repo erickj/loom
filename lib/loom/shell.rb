@@ -1,5 +1,8 @@
 module Loom
   class Shell
+
+    VerifyError = Class.new StandardError
+
     def initialize(sshkit_backend)
       @sshkit_backend = sshkit_backend
       @local_shell = nil
@@ -10,21 +13,24 @@ module Loom
     end
 
     def verify(check)
-      unless @sshkit_backend.test check
-        raise "check failed: #{check}"
-      end
+      raise VerifyError, check unless @sshkit_backend.test check
     end
 
     def method_missing(method, *args, &block)
       execute method, *args
     end
 
-    [:capture, :test, :within, :as].each do |method|
+    def capture(*args, &block)
+      Loom.log.debug { "$ #{args}" }
+      @sshkit_backend.capture *args, &block 
+    end
+    alias_method :execute, :capture
+
+    [:test, :within, :as].each do |method|
       define_method method do |*args, &block|
         @sshkit_backend.send method, *args, &block
       end
     end    
-    alias_method :execute, :capture
   end
 
   class LocalShell < Shell

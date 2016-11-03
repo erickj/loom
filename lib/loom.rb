@@ -1,5 +1,3 @@
-require 'logger'
-
 module Loom
   StandardError = Class.new(::StandardError)
 
@@ -17,19 +15,19 @@ module Loom
       @config
     end
 
+    def log
+      @logger ||= config_logger
+    end
+
+    private
     def config_changed
       SSHKit.config.output_verbosity = config.sshkit_log_level
     end
 
     def config_logger
-      @logger = Logger.new config.log_device
-      @logger.level = Logger.const_get config.log_level.upcase
-      @logger.datetime_format = config.log_datetime_format
+      @logger = Loom::Logger.configure config
     end
 
-    def logger
-      @logger ||= config_logger
-    end
   end
 end
 

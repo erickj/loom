@@ -5,11 +5,11 @@ module Loom
 
     CONFIG_VARS = {
       :inventory_roots => ['/etc/loom', './loom'],
-      :log_level => :debug, # [debug, info, warn, error, fatal, none]
+      :log_level => :debug, # [debug, info, warn, error, fatal]
       :log_device => STDERR,
-      :log_datetime_format => "%s", # http://ruby-doc.org/core-2.3.1/Time.html#method-i-strftime
-      :failure_stratgy => :exclude_host # [exclude_host, fail_fast, cowboy]
-      :sshkit_log_level => :debug,
+      :log_colorize => true,
+      :failure_stratgy => :exclude_host, # [exclude_host, fail_fast, cowboy]
+      :sshkit_log_level => :warn,
     }.freeze
 
     attr_reader *CONFIG_VARS.keys

@@ -9,7 +9,7 @@ include Loom::DSL
 #mod.files.mv "a", "b"
 
 Loom.configure do |c|
-  c.sshkit_log_level = :debug
+#  c.sshkit_log_level = :debug
   c.log_level = :debug
 end
 

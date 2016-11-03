@@ -77,7 +77,5 @@ class LoomCli
 end
 
 if $0 == __FILE__
-  puts "detecting bundle wrapper"
-  puts $0
-#  LoomCli.new.run 
+  LoomCli.new.run 
 end
