@@ -16,7 +16,7 @@ module Loom
       end
 
       execution_block = lambda do |host|
-        Loom.log.debug1(self) { "[#{host.hostname}] connected to host" }
+        Loom.log.debug1(self) { "connected to host => #{host.hostname}" }
         sshkit_backend = self
 
         # Each host needs its own shell and mod loader to make sure
@@ -29,11 +29,15 @@ module Loom
 
       local_specs = host_specs.select { |s| s.is_localhost? }
       unless local_specs.empty?
+        Loom.log.debug1(self) do
+          "local execution for host entry => #{local_specs.first}" 
+        end
         SSHKitDSLShadow.run_locally &execution_block
       end
 
       remote_specs = host_specs.select { |s| s.is_remote? }.map(&:sshkit_host)
       unless remote_specs.empty?
+        Loom.log.debug1(self) { "remoted execution for #{remote_specs.size} hosts" }
         SSHKitDSLShadow.on remote_specs, &execution_block
       end
     end

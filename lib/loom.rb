@@ -22,6 +22,7 @@ module Loom
     private
     def config_changed
       SSHKit.config.output_verbosity = config.sshkit_log_level
+      SSHKit.config.default_runner = config.sshkit_execution_strategy
       @logger = nil
     end
 

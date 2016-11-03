@@ -6,8 +6,8 @@
     - vm-ubuntu-base
 - :digitalocean:
     - ejjohnson.net
-    - vos.io
+#    - vos.io
     - quotes.vos.io
 - :vos.io:
     - quotes.vos.io
-    - vos.io
+#    - vos.io

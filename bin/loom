@@ -22,15 +22,14 @@ through SSH, loosely inspired by Python Fabric - http://www.fabfile.org/.
 Try `loom weave uptime -H localhost` to see an example.
 EOS
 
-      global_option "-d", "Enable loom debug logging" do
+      global_option "-d", "Enable loom verbose logging" do
         Loom.configure { |c| c.log_level = :debug }
       end
 
-      global_option "--dd DEBUG_LEVEL", Integer,
-                    "Enable loom debug logging, supply an optional LEVEL " +
-                    "0-6 for more details" do |debug_level|
-        raise 'debug level must be >= 0' unless debug_level >= 0
-        Loom.configure { |c| c.log_level = debug_level * -1 }
+      global_option "--dbg [N]", Integer,
+                    "Enable very verbose debug logging." do |level|
+        raise "level must be greater than 0" if level < 0
+        Loom.configure { |c| c.log_level = level * -1 }
       end
 
       global_option "-l", "--loom-files FILES", Array,
@@ -44,14 +43,14 @@ EOS
         Loom.configure { |c| c.inventory_all_hosts = flag }
       end
 
-      global_option "-H", "--hosts HOSTS", Array,
+      global_option "-H", "--hosts host1,h2,h3", Array,
                     "Adds HOSTS to the active inventory" do |hosts|
         Loom.configure { |c| c.inventory_hosts = hosts }
       end
 
-      global_option "-G", "--host-groups GROUPS", Array,
+      global_option "-G", "--groups group1,g2,g3", Array,
                     "Adds hostnames in GROUPS to the active inventory" do |groups|
-        Loom.configure { |c| c.inventory_host_groups = groups }
+        Loom.configure { |c| c.inventory_groups = groups }
       end
 
       global_option "-p", "--ssh-port PORT", Integer,
@@ -107,10 +106,11 @@ EOS
         c.syntax = "loom inventory [options]"
         c.description = "List all hosts in the inventory."
 
-        c.option "--active",
-                 "Restricts to the hosts in the active inventory, " +
-                 "this is useful to check which hosts will be targeted " +
-                 "with the config."
+        c.option "--active", <<EOS
+Restricts to the hosts in the active inventory, useful to check which
+hosts will be targeted with the config. Using with the -a flag is
+equivalent to omitting --active.
+EOS
 
         c.action do |arg, options|
           inventory = if options.active

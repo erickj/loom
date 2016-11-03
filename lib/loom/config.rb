@@ -11,12 +11,11 @@ module Loom
       :inventory_roots => ['/etc/loom', './loom'],
       :inventory_all_hosts => false,
       :inventory_hosts => [],
-      :inventory_host_groups => [],
+      :inventory_groups => [],
 
       :loom_files => ['./site.loom'],
 
       :loom_ssh_user => 'deploy', # Can be overriden per host
-
 
       :log_level => :warn, # [debug, info, warn, error, fatal, or Integer]
       :log_device => :stderr, # [stderr, stdout, file descriptor, or file name]
@@ -24,6 +23,7 @@ module Loom
 
       :failure_stratgy => :exclude_host, # [exclude_host, fail_fast, cowboy]
 
+      :sshkit_execution_strategy => :sequence, # [:sequence, :parallel, :groups]
       :sshkit_log_level => :warn,
     }.freeze
 
@@ -31,14 +31,21 @@ module Loom
 
     def initialize(**config_map)
       config_map.each do |k,v|
+        # allows attr_reader methods from CONFIG_VAR to work
         instance_variable_set :"@#{k}", v
       end
+
       @config_map = config_map
+    end
+
+    def [](key)
+      @config_map[key]
     end
 
     def to_yaml
       @config_map.to_yaml
     end
+    alias_method :dump, :to_yaml # aliased to dump for debugging purposes
 
     class << self
       def configure(config=nil, &block)

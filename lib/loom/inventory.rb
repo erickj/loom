@@ -15,23 +15,40 @@ module Loom
 
       class << self
         def total_inventory(loom_config)
-          inventory_fileset = InventoryFileSet.new loom_config.inventory_roots
-          InventoryList.new inventory_fileset.hostlist, inventory_fileset.hostgroups
+          Loom.log.debug6(self) { "#total_inventory config => #{loom_config.dump}" }
+
+          fileset = InventoryFileSet.new loom_config.inventory_roots
+          config_hostlist = loom_config.inventory_hosts
+          hostlist = fileset.hostlist + config_hostlist
+          InventoryList.new hostlist, fileset.hostgroup_map
         end
 
         ##
         # The list of hosts to apply patterns to
         def active_inventory(loom_config)
-          explicit_hostlist = loom_config.inventory_hosts
-          InventoryList.new explicit_hostlist
+          Loom.log.debug6(self) { "#active_inventory config => #{loom_config.dump}" }
+
+          return total_inventory loom_config if loom_config.inventory_all_hosts
+
+          fileset = InventoryFileSet.new loom_config.inventory_roots
+          groups = loom_config.inventory_groups.map(&:to_sym).reduce({}) do |map, group|
+            Loom.log.debug2(self) { "looking for group => #{group}" }
+            map[group] = fileset.hostgroup_map[group] if fileset.hostgroup_map.key? group
+            map
+          end
+          Loom.log.debug1(self) { "groups map => #{groups}" }
+
+          InventoryList.new loom_config.inventory_hosts, groups
         end
       end
 
       attr_reader :hosts
 
-      def initialize(hostlist, hostgroups={})
-        @hosts = parse_hosts(hostlist).uniq { |h| h.hostname }
-        @hostgroups = hostgroups
+      def initialize(hostlist, hostgroup_map={})
+        @hostgroup_map = hostgroup_map
+
+        all_hosts = hostgroup_map.values.flatten + hostlist
+        @hosts = parse_hosts(all_hosts).uniq { |h| h.hostname }
       end
 
       def parse_hosts(list)
@@ -46,7 +63,7 @@ module Loom
       end
 
       def group_names
-        @hostgroups.keys
+        @hostgroup_map.keys
       end
     end
 
@@ -54,6 +71,8 @@ module Loom
     class InventoryFileSet
       def initialize(roots)
         @roots = roots
+        @hostgroup_map = nil
+        @hostlist = nil
 
         inventory_file_paths = @roots.map do |root|
           search_globs = INVENTORY_FILE_NAMES.map do |name|
@@ -68,8 +87,8 @@ module Loom
         end
       end
 
-      def hostgroups
-        @raw_inventories.reduce({}) do |map, i|
+      def hostgroup_map
+        @hostgroup_map ||= @raw_inventories.reduce({}) do |map, i|
           i.each do |entry|
             if entry.is_a? Hash
               Loom.log.debug "merging groups in #{entry}"
@@ -81,7 +100,7 @@ module Loom
       end
 
       def hostlist
-        @raw_inventories.map do |i|
+        @hostlist ||= @raw_inventories.map do |i|
           i.map do |entry|
             case entry
             when String
