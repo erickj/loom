@@ -1,5 +1,8 @@
 module Loom
   class Runner
+
+    UnknownPattern = Class.new StandardError
+
     include Loom::DSL
 
     def initialize(loom_config, pattern_slugs=[])
@@ -21,21 +24,23 @@ module Loom
         return
       end
 
-      @pattern_slugs.each do |pattern_slug|
-        pattern_ref = @pattern_loader[pattern_slug]
-        raise UnknownPattern, pattern_slug unless pattern_ref
+      pattern_slugs = @pattern_slugs
+      pattern_loader = @pattern_loader
 
-        bound_pattern_method = pattern_ref.bind Object.new
+      on_host active_hosts do |shell, mods, host|
+        pattern_slugs.each do |pattern_slug|
+          pattern_ref = pattern_loader[pattern_slug]
+          raise UnknownPattern, pattern_slug unless pattern_ref
 
-        on_host active_hosts do |shell, mods, host|
           pattern_description = "#{host.hostname} => #{pattern_slug}"
-
           if dry_run
             Loom.log.warn "dry run: #{pattern_description}"
           else
+            bound_pattern_method = pattern_ref.bind Object.new
             Loom.log.info pattern_description
             bound_pattern_method.call shell, mods, host
           end
+
         end
       end
     end
