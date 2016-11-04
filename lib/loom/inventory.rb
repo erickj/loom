@@ -15,9 +15,7 @@ module Loom
 
       class << self
         def total_inventory(loom_config)
-          Loom.log.debug6(self) { "#total_inventory config => #{loom_config.dump}" }
-
-          fileset = InventoryFileSet.new loom_config.inventory_roots
+          fileset = InventoryFileSet.new inventory_files(loom_config)
           config_hostlist = loom_config.inventory_hosts
           hostlist = fileset.hostlist + config_hostlist
           InventoryList.new hostlist, fileset.hostgroup_map
@@ -28,7 +26,7 @@ module Loom
         def active_inventory(loom_config)
           return total_inventory loom_config if loom_config.inventory_all_hosts
 
-          fileset = InventoryFileSet.new loom_config.inventory_roots
+          fileset = InventoryFileSet.new inventory_files(loom_config)
           groups = loom_config.inventory_groups.map(&:to_sym).reduce({}) do |map, group|
             Loom.log.debug2(self) { "looking for group => #{group}" }
             map[group] = fileset.hostgroup_map[group] if fileset.hostgroup_map.key? group
@@ -37,6 +35,11 @@ module Loom
           Loom.log.debug1(self) { "groups map => #{groups}" }
 
           InventoryList.new loom_config.inventory_hosts, groups
+        end
+
+        private
+        def inventory_files(loom_config)
+          loom_config.files.find INVENTORY_FILE_NAMES
         end
       end
 
@@ -55,14 +58,7 @@ module Loom
       end
 
       def disabled?(hostname)
-        @disabled_hosts[hostname]
-      end
-
-      def parse_hosts(list)
-        list.map do |hoststring|
-          raise InvalidHostEntry, hoststring.class.name unless hoststring.is_a? String
-          HostSpec.new hoststring
-        end
+        !!@disabled_hosts[hostname]
       end
 
       def hostnames
@@ -72,23 +68,23 @@ module Loom
       def group_names
         @hostgroup_map.keys
       end
+
+      private
+      def parse_hosts(list)
+        list.map do |hoststring|
+          raise InvalidHostEntry, hoststring.class.name unless hoststring.is_a? String
+          HostSpec.new hoststring
+        end
+      end
     end
 
     private
     class InventoryFileSet
-      def initialize(roots)
-        @roots = roots
+      def initialize(inventory_files)
         @hostgroup_map = nil
         @hostlist = nil
 
-        inventory_file_paths = @roots.map do |root|
-          search_globs = INVENTORY_FILE_NAMES.map do |name|
-            File.join root, "**", name
-          end
-          Dir.glob search_globs
-        end.flatten.map { |p| File.realpath p}
-
-        @raw_inventories = inventory_file_paths.map do |path|
+        @raw_inventories = inventory_files.map do |path|
           Loom.log.debug "loading inventory file #{path}"
           YAML.load_file path
         end

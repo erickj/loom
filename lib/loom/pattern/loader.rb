@@ -7,7 +7,7 @@ module Loom::Pattern
   class Loader
     class << self
       def configure(config)
-        loader = Loader.new config.loom_files
+        loader = Loader.new config.files.loom_files
         loader.load_patterns
         loader
       end
@@ -24,25 +24,25 @@ module Loom::Pattern
     alias_method :[], :get_pattern_ref
 
     def loaded_patterns
-      @pattern_ref_map.keys
+      @pattern_ref_map.values
     end
 
     def load_patterns
       @loom_pattern_files.each do |f|
         raise SiteFileNotFound, f unless File.exists? f
-        load_site_file f
+        load_pattern_file f
       end
     end
 
     private
-    def load_site_file(f)
-      Loom.log.debug1(self) { "loading site file: #{f}" }
+    def load_pattern_file(f)
+      Loom.log.debug1(self) { "loading pattern file: #{f}" }
       Shell.module_eval File.read f
 
-      register_pattern_refs Shell
+      register_pattern_refs Shell, f
     end
 
-    def register_pattern_refs(shell_module, visited_modules={})
+    def register_pattern_refs(shell_module, source_file, visited_modules={})
       if visited_modules[shell_module.name]
         # Avoid circularities
         return
@@ -68,7 +68,8 @@ module Loom::Pattern
           pattern_slug = PatternNameTrimer.create_pattern_slug \
             trimmed_module_name, pattern_method_name
 
-          ref = PatternReference.new pattern_slug, unbound_method, trimmed_module_name
+          ref = PatternReference.new(
+            pattern_slug, unbound_method, trimmed_module_name, source_file)
           add_pattern_ref ref
         end
       end
@@ -77,7 +78,7 @@ module Loom::Pattern
       shell_module.constants
         .map { |c| shell_module.const_get c }
         .select { |c| c.is_a? Module }
-        .each { |mod| register_pattern_refs mod, visited_modules }
+        .each { |mod| register_pattern_refs mod, source_file, visited_modules }
     end
 
     def add_pattern_ref(pattern_ref)

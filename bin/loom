@@ -25,13 +25,13 @@ through SSH, loosely inspired by Python Fabric - http://www.fabfile.org/.
 Try `loom weave uptime -H localhost` to see an example.
 EOS
 
-      global_option "--verbose", "Enable verbose loom result reporting" do
+      global_option "--[no-]verbose", "Enable verbose loom result reporting" do |v|
         Loom.configure do |c|
-          c.run_verbose = true
+          c.run_verbose = v
         end
       end
 
-      global_option "-d", "Enable loom debug logging, implies --verbose" do
+      global_option "-d", "Enable loom debug logging, implies --verbose" do |d|
         Loom.configure do |c|
           c.log_level = :debug
           c.run_verbose = true
@@ -39,16 +39,16 @@ EOS
       end
 
       global_option "--dbg [N]", Integer,
-                    "Enable very verbose debug logging, implies --verbose" do |level|
-        raise "level must be greater than 0" if level < 0
+                    "Enable deep debug logging, where N is 0-6, implies --verbose" do |n|
+        raise "N must be greater than 0" if n < 0
         Loom.configure do |c|
-          c.log_level = level * -1
+          c.log_level = n * -1
           c.run_verbose = true
         end
       end
 
-      global_option "-l", "--loom-files FILES", Array,
-                    "Load loom files from FILES instead of #{Loom.config.loom_files}" do |files|
+      global_option "-l", "--loom-files file1,f2,f3", Array,
+                    "Load loom files from FILES instead of from the search path." do |files|
         Loom.configure { |c| c.loom_files = files }
       end
 
@@ -66,20 +66,6 @@ EOS
       global_option "-G", "--groups group1,g2,g3", Array,
                     "Adds hostnames in GROUPS to the active inventory" do |groups|
         Loom.configure { |c| c.inventory_groups = groups }
-      end
-
-      global_option "-p", "--ssh-port PORT", Integer,
-                     "Overrides standard SSH port 22, this can also be set per host" do |p|
-        Loom.configure { |c| c.loom_ssh_port = p }
-      end
-
-      global_option "-u", "--ssh-user USER", String,
-                     "Overrides the standard SSH user, #{Loom.config.loom_ssh_user}, " +
-                     "this can also be set per host as part of the host string" do |u|
-        Loom.configure do |c|
-          puts 'in user'
-          c.loom_ssh_user = u
-        end
       end
 
       default_command :weave
@@ -106,7 +92,13 @@ EOS
           puts "Loom patterns are:"
           puts ""
           loader = Loom::Pattern::Loader.configure Loom.config
-          loader.loaded_patterns.each { |p| puts "\t#{p}" }
+
+          pattern_refs = loader.loaded_patterns
+          max_slug_len = pattern_refs.map(&:slug).map(&:size).reduce(0) { |*args| args.max }
+          puts "\t" + "Pattern:".ljust(max_slug_len) + "\tSource:"
+          loader.loaded_patterns.each do |ref|
+            puts "\t#{ref.slug.ljust(max_slug_len)}\t#{ref.source_file}"
+          end
         end
       end
       alias_command :"p", :"patterns"

@@ -1,12 +1,13 @@
 module Loom::Pattern
   class PatternReference
 
-    attr_reader :slug
+    attr_reader :slug, :source_file
 
-    def initialize(slug, unbound_method, original_module_name)
+    def initialize(slug, unbound_method, original_module_name, source_file)
       @slug = slug
       @unbound_method = unbound_method
       @original_module_name = original_module_name
+      @source_file = source_file
     end
 
     def call(*args, &block)

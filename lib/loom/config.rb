@@ -8,14 +8,12 @@ module Loom
   class Config
 
     CONFIG_VARS = {
-      :inventory_roots => ['/etc/loom', './loom'],
+      :loom_search_paths => ['/etc/loom', File.join(ENV['HOME'], '.loom'), './.loom'],
+      :loom_files => ['site.loom'],
+
       :inventory_all_hosts => false,
       :inventory_hosts => [],
       :inventory_groups => [],
-
-      :loom_files => ['./site.loom'],
-
-      :loom_ssh_user => 'deploy', # Can be overriden per host
 
       :log_level => :warn, # [debug, info, warn, error, fatal, or Integer]
       :log_device => :stderr, # [stderr, stdout, file descriptor, or file name]
@@ -24,7 +22,7 @@ module Loom
       :run_failure_stratgy => :exclude_host, # [exclude_host, fail_fast, cowboy]
       :run_verbose => false,
 
-      :sshkit_execution_strategy => :sequence, # [:sequence, :parallel, :groups]
+      :sshkit_execution_strategy => :sequence, # [sequence, parallel, groups]
       :sshkit_log_level => :warn,
     }.freeze
 
@@ -37,6 +35,7 @@ module Loom
       end
 
       @config_map = config_map
+      @file_manager = FileManager.new self
     end
 
     def [](key)
@@ -48,6 +47,10 @@ module Loom
     end
     alias_method :dump, :to_yaml # aliased to dump for debugging purposes
 
+    def files
+      @file_manager
+    end
+
     class << self
       def configure(config=nil, &block)
         # do NOT call Loom.log inside this block, the logger may not be
@@ -57,6 +60,46 @@ module Loom
         config_struct = OpenStruct.new **map
         yield config_struct if block_given?
         Config.new config_struct.to_h
+      end
+    end
+
+    private
+    class FileManager
+
+      LOOM_FILE_PATTERNS = ["*.loom"]
+
+      def initialize(config)
+        @loom_search_paths = config.loom_search_paths
+        @loom_files = config.loom_files
+      end
+
+      def find(glob_patterns)
+        search_loom_paths(glob_patterns)
+      end
+
+      def loom_files
+        [@loom_files + search_loom_paths(LOOM_FILE_PATTERNS)].flatten.uniq
+      end
+
+      private
+      def search_loom_paths(file_patterns)
+        # Maps glob patterns into real file paths, selecting only
+        # readable files, and logs the result.
+        file_patterns.map do |file_pattern|
+          @loom_search_paths.map do |path|
+            Dir.glob File.join(path, "**", file_pattern)
+          end
+        end.flatten.uniq.select do |path|
+          should_select = File.file?(path) && File.readable?(path)
+          unless should_select
+            Loom.log.debug1(self) { "skipping config path => #{path}" }
+          end
+          should_select
+        end.tap do |config_files|
+          unless config_files.empty?
+            Loom.log.debug1(self) { "found config files => #{config_files}" }
+          end
+        end
       end
     end
   end
