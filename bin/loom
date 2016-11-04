@@ -1,4 +1,9 @@
 #!/usr/bin/env ruby
+if __FILE__ == $0
+  # for local development, when running bin/loom directly
+  $: << 'lib'
+end
+
 require 'commander'
 require 'loom'
 
@@ -20,14 +25,26 @@ through SSH, loosely inspired by Python Fabric - http://www.fabfile.org/.
 Try `loom weave uptime -H localhost` to see an example.
 EOS
 
-      global_option "-d", "--verbose", "Enable loom verbose logging" do
-        Loom.configure { |c| c.log_level = :debug }
+      global_option "--verbose", "Enable verbose loom result reporting" do
+        Loom.configure do |c|
+          c.run_verbose = true
+        end
+      end
+
+      global_option "-d", "Enable loom debug logging, implies --verbose" do
+        Loom.configure do |c|
+          c.log_level = :debug
+          c.run_verbose = true
+        end
       end
 
       global_option "--dbg [N]", Integer,
-                    "Enable very verbose debug logging." do |level|
+                    "Enable very verbose debug logging, implies --verbose" do |level|
         raise "level must be greater than 0" if level < 0
-        Loom.configure { |c| c.log_level = level * -1 }
+        Loom.configure do |c|
+          c.log_level = level * -1
+          c.run_verbose = true
+        end
       end
 
       global_option "-l", "--loom-files FILES", Array,
@@ -74,22 +91,25 @@ EOS
 
         c.option "-n", "--dry-run",
                  "Don't run the patterns, only connect and log the expected patterns"
-        c.option "-P", "--list-patterns",
-                 "List all known patterns, ignores all other arguments"
-
         c.action do |patterns, options|
-          if options.list_patterns
-            puts "Loaded Patterns:"
-            loader = Loom::Pattern::Loader.configure Loom.config
-            puts loader.loaded_patterns.to_yaml
-          else
-            runner = Loom::Runner.new Loom.config, patterns
-            runner.run options.dry_run
-          end
-
+          runner = Loom::Runner.new Loom.config, patterns
+          runner.run options.dry_run
         end
       end
       alias_command :"w", :"weave"
+
+      command :"patterns" do |c|
+        c.syntax = "loom patterns [pattern]"
+        c.description = "Prints the list of known patterns."
+
+        c.action do |patterns, options|
+          puts "Loom patterns are:"
+          puts ""
+          loader = Loom::Pattern::Loader.configure Loom.config
+          loader.loaded_patterns.each { |p| puts "\t#{p}" }
+        end
+      end
+      alias_command :"p", :"patterns"
 
       command :"config" do |c|
         c.syntax = "loom config [options]"

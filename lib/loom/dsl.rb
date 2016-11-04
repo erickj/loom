@@ -11,9 +11,8 @@ module Loom
     # +host_specs+. +host_specs+ should be an array of String
     # hostname/connection strings or +SSHKitHost+ instances.
     #
-    # +&block+ should accept 3 arguments, a Loom::Shell, a
-    # Loom::ModLoader, and the current +SSHKitHost+
-    def on_host(host_specs, binding_context, &pattern_block)
+    # +&block+ should accept an SSHKit::Backend and SSHKit::Host
+    def on_host(host_specs, &run_block)
       host_specs.each do |spec|
         raise UnexpectedHostError, "not a HostSpec => #{spec}" unless spec.is_a? HostSpec
       end
@@ -22,13 +21,8 @@ module Loom
         Loom.log.debug1(self) { "connecting to host => #{host.hostname}" }
         sshkit_backend = self
 
-        # Each host needs its own shell and mod loader to make sure
-        # context is preserved correctly
-        shell = Loom::Shell.new sshkit_backend
-        mods = Loom::Mods::ModLoader.new shell
-
         begin
-          yield shell, mods, host
+          yield sshkit_backend, host
         rescue SocketError => e
           Loom.log.error "error connecting to host => #{host.hostname}"
           raise SSHConnectionError, e

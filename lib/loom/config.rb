@@ -21,7 +21,8 @@ module Loom
       :log_device => :stderr, # [stderr, stdout, file descriptor, or file name]
       :log_colorize => true,
 
-      :failure_stratgy => :exclude_host, # [exclude_host, fail_fast, cowboy]
+      :run_failure_stratgy => :exclude_host, # [exclude_host, fail_fast, cowboy]
+      :run_verbose => false,
 
       :sshkit_execution_strategy => :sequence, # [:sequence, :parallel, :groups]
       :sshkit_log_level => :warn,

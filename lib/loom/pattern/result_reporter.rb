@@ -1,6 +1,7 @@
 module Loom::Pattern
   class ResultReporter
-    def initialize(pattern_slug, host, shell_session)
+    def initialize(loom_config, pattern_slug, host, shell_session)
+      @loom_config = loom_config
       @start = Time.now
       @delta_t = nil
       @host = host
@@ -31,41 +32,41 @@ module Loom::Pattern
 
     def scenario_string
       status = success? ? "OK" : "FAILED"
-      "[Result: #{status}] (#{@host.hostname}) => (#{@pattern_slug})"
+      "#{@host.hostname} => #{@pattern_slug} [Result: #{status}] "
     end
 
     def generate_report
       cmds = @shell_session.command_results
 
-      report = ["-------"]
-      report << "#{scenario_string}"
+      report = ["--- #{scenario_string}"]
       report << "Completed in: %01.3fs" % @delta_t
 
-      unless success?
-        failure_cmds = cmds.select { |c| !c.success? }
-        failure_cmds.each do |failed_cmd|
-          report.concat generate_failure_report(failed_cmd)
+      cmds.each do |cmd|
+        if !cmd.success? || @loom_config.run_verbose
+          report.concat generate_cmd_report(cmd)
         end
       end
 
       report
     end
 
-    def generate_failure_report(cmd)
+    def generate_cmd_report(cmd)
+      status = cmd.success? ? "Failed" : "Success"
       report = []
-      report << "-------"
+      report << ""
+      report << "--- #{status} Command ---"
       report << "$ #{cmd.command}"
-      report << "exit status: #{cmd.exit_status}"
 
       unless cmd.stdout.empty?
-        report << "stdout:"
         report << cmd.stdout
       end
 
       unless cmd.stderr.empty?
-        report << "stderr:"
+        report << "[STDERR]:"
         report << cmd.stderr
       end
+
+      report << "[EXIT STATUS]: #{cmd.exit_status}"
 
       report
     end

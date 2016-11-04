@@ -2,7 +2,7 @@ include Loom::Pattern::Container
 
 def uptime(_, mods, ctx)
   _.uptime
-  _.execute "echo out 1>&2"
+  _.execute "echo out to stderr 1>&2"
 end
 
 def fail(_, mods, ctx)
