@@ -1,19 +1,20 @@
 include Loom::Pattern::Container
 
-def uptime(_, mods, ctx)
+pattern :uptime do |_, mods, ctx|
   _.uptime
   _.execute "echo out to stderr 1>&2"
 end
 
-def fail(_, mods, ctx)
+pattern :fail do |_, mods, ctx|
   _.false
   _.execute "echo out 1>&2"
 end
 
+
 module SSH
   include Loom::Pattern::Container
 
-  def harden(_, mods, ctx)
+  pattern :harden do |_, mods, ctx|
     _.echo "so hard for #{ctx}"
   end
 end
@@ -21,7 +22,7 @@ end
 module Users
   include Loom::Pattern::Container
 
-  def init(_, mods, ctx)
+  pattern :init do |*args|
     puts "initing users"
   end
 end
