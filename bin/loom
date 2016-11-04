@@ -1,6 +1,4 @@
 #!/usr/bin/env ruby
-$: << 'lib'
-
 require 'commander'
 require 'loom'
 
@@ -128,4 +126,4 @@ EOS
   end
 end
 
-Loom::Cli.new.run if $0 == __FILE__
+Loom::Cli.new.run

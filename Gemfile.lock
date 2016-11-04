@@ -1,3 +1,13 @@
+PATH
+  remote: .
+  specs:
+    loom (0.0.1)
+      bcrypt_pbkdf (= 1.0.0.alpha1)
+      commander (~> 4.4)
+      net-ssh (>= 3)
+      rbnacl-libsodium (= 1.0.10)
+      sshkit (~> 1.11)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -9,24 +19,25 @@ GEM
     highline (1.7.8)
     net-scp (1.2.1)
       net-ssh (>= 2.6.5)
-    net-ssh (4.0.0.beta3)
+    net-ssh (3.2.0)
+    rake (11.3.0)
     rbnacl (3.4.0)
       ffi
     rbnacl-libsodium (1.0.10)
       rbnacl (>= 3.0.1)
-    rspec (3.2.0)
-      rspec-core (~> 3.2.0)
-      rspec-expectations (~> 3.2.0)
-      rspec-mocks (~> 3.2.0)
-    rspec-core (3.2.2)
-      rspec-support (~> 3.2.0)
-    rspec-expectations (3.2.0)
+    rspec (3.5.0)
+      rspec-core (~> 3.5.0)
+      rspec-expectations (~> 3.5.0)
+      rspec-mocks (~> 3.5.0)
+    rspec-core (3.5.4)
+      rspec-support (~> 3.5.0)
+    rspec-expectations (3.5.0)
       diff-lcs (>= 1.2.0, < 2.0)
-      rspec-support (~> 3.2.0)
-    rspec-mocks (3.2.1)
+      rspec-support (~> 3.5.0)
+    rspec-mocks (3.5.0)
       diff-lcs (>= 1.2.0, < 2.0)
-      rspec-support (~> 3.2.0)
-    rspec-support (3.2.2)
+      rspec-support (~> 3.5.0)
+    rspec-support (3.5.0)
     sshkit (1.11.3)
       net-scp (>= 1.1.2)
       net-ssh (>= 2.8.0)
@@ -35,12 +46,10 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  bcrypt_pbkdf
-  commander
-  net-ssh (>= 4.0.0.beta2)
-  rbnacl-libsodium
-  rspec
-  sshkit (~> 1.11)
+  bundler (~> 1.13)
+  loom!
+  rake (~> 11.3)
+  rspec (~> 3.5)
 
 BUNDLED WITH
    1.13.6
