@@ -64,8 +64,13 @@ pattern :users do |loom, ctx|
     loom.users.add_user :marrian, home_dir: "/home/marrian"
 
     loom.users.add_system_user :app, uid: 900
-    loom.users.add_system_user :batch, uid: 901
-    loom.users.add_system_user :sysuserx
+    loom.users.add_system_user :batch
+
+    loom.users.remove_user :deploy
+    loom.users.remove_user :nara
+    loom.users.remove_user :marrian
+    loom.users.remove_user :app
+    loom.users.remove_user :batch
   end
 end
 

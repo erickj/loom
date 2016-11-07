@@ -4,7 +4,7 @@ module Loom::CoreMods
   class Users < Loom::Mods::Module
 
     register_mod :users
-    required_commands :useradd, :getent
+    required_commands :useradd, :userdel, :getent
 
     def user_exists?(user)
       shell.test :getent, "passwd #{user}"
@@ -36,7 +36,21 @@ module Loom::CoreMods
       end
 
       def add_system_user(user, **user_fields)
+        if user_exists? user
+          Loom.log.warn "add_system_user skipping existing user => #{user}"
+          return
+        end
+
         add_user user, is_system_user: true, login_shell: "/bin/false", **user_fields
+      end
+
+      def remove_user(user)
+        unless user_exists? user
+          Loom.log.warn "remove_user skipping non-existant user => #{user}"
+          return
+        end
+
+        shell.exec "userdel -r %s" % user
       end
     end
   end

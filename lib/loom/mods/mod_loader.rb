@@ -15,7 +15,12 @@ module Loom::Mods
     def verify_shell_cmds(mod_klass)
       Loom.log.debug2(self) { "verifying cmds for mod => #{mod_klass}" }
       mod_klass.required_commands.each do |cmd|
-        @shell.verify_which cmd
+        begin
+          @shell.verify_which cmd
+        rescue Loom::Shell::VerifyError
+          Loom.log.error "unable to use mod #{mod_klass}, missing required command => #{cmd}"
+          raise $!
+        end
       end
     end
 
