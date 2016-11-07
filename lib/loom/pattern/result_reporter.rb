@@ -51,7 +51,7 @@ module Loom::Pattern
     end
 
     def generate_cmd_report(cmd)
-      status = cmd.success? ? "Failed" : "Success"
+      status = cmd.success? ? "Success" : "Failed"
       report = []
       report << ""
       report << "--- #{status} Command ---"

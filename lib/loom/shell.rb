@@ -1,3 +1,4 @@
+require "forwardable"
 require "sshkit"
 
 module Loom
@@ -5,47 +6,120 @@ module Loom
 
     VerifyError = Class.new Loom::LoomError
 
-    def initialize(sshkit_backend)
-      @sshkit_backend = sshkit_backend
+    def initialize(sshkit_backend, dry_run=false)
+      @dry_run = dry_run
+      @mod_loader = Loom::Mods::ModLoader.new self
       @session = ShellSession.new
-      @local_shell = nil
+      @shell_api = ShellApi.new self
+
+      @sshkit_backend = sshkit_backend
+
+      @sudo_users = []
+      @sudo_dir = nil
     end
 
-    attr_reader :session
+    attr_reader :session, :mod_loader, :shell_api
 
     def local
-      @local_shell ||= LocalShell.new
+      @local ||= LocalShell.new @session, @dry_run
     end
 
-    def verify(check)
-      raise VerifyError, check unless @sshkit_backend.test check
+    def verify(*check)
+      raise VerifyError, check unless @sshkit_backend.test *check
     end
 
-    def method_missing(method, *args, &block)
-      execute method, *args
+    def verify_which(command)
+      verify :which, command
     end
 
-    def execute(*args, &block)
-      Loom.log.debug { "$ #{args}" }
+    def sudo(user=nil, *args, &block)
+      user ||= :root
+      Loom.log.debug1(self) { "sudo => #{user} #{args} #{block}" }
+
+      is_new_sudoer = @sudo_users.last.to_sym != user.to_sym rescue true
+
+      @sudo_dir = capture :pwd
+      @sudo_users << user if is_new_sudoer
+
+      begin
+        execute *args unless args.empty?
+        yield if block_given?
+      ensure
+        @sudo_users.pop if is_new_sudoer
+        @sudo_dir = nil
+      end
+    end
+
+    def cd(path, &block)
+      Loom.log.debug1(self) { "cd => #{path} #{block}" }
+      @sshkit_backend.within path, &block
+    end
+
+    def capture(*args)
+      result = execute *args
+      result ? @session.last.stdout.strip : nil
+    end
+
+    def execute(*args)
+      cmd = create_command args
+      Loom.log.debug { "exec => #{cmd}" }
+
+      if @dry_run
+        Loom.log.warn "dry-run only: %s" % cmd
+        quote_escaped_cmd = %Q[#{cmd}]
+        cmd = "echo \"#{quote_escaped_cmd}\""
+      end
 
       # This is a big hack to get access to the SSHKit command object
       # and avoid the automatic errors thrown on non-zero error codes
       sshkit_cmd = @sshkit_backend.send(
         :create_command_and_execute,
-        args,
+        cmd,
         :raise_on_non_zero_exit => false)
 
       @session << CommandResult.create_from_sshkit_command(sshkit_cmd)
 
       Loom.log.debug @session.last.stdout unless @session.last.stdout.empty?
       Loom.log.debug @session.last.stderr unless @session.last.stderr.empty?
-    end
-    alias_method :capture, :execute
 
-    [:test, :within, :as].each do |method|
+      @session.last.success?
+    end
+    alias_method :exec, :execute
+
+    def create_command(*args)
+      cmd = args.flatten.map(&:to_s).join " "
+      cmd = @sudo_users.reverse.reduce(cmd) do |cmd, sudo_user|
+        quote_escaped_cmd = cmd.gsub('"', '\"').gsub('\\"', '\"')
+        "sudo -u #{sudo_user} -- /bin/sh -c \"#{quote_escaped_cmd}\""
+      end
+
+      cmd = "cd #{@sudo_dir};" << cmd if @sudo_dir
+      cmd
+    end
+
+    [:test].each do |method|
       define_method method do |*args, &block|
         @sshkit_backend.send method, *args, &block
       end
+    end
+  end
+
+  ##
+  # A facade for the shell API exposed to Loom files
+  class ShellApi
+    extend Forwardable
+    def initialize(shell)
+      @shell = shell
+      @mod_loader = shell.mod_loader
+    end
+
+    def local
+      @shell.local.shell_api
+    end
+
+    def method_missing(name, *args, &block)
+      Loom.log.debug3(self) { "shell api => #{name} #{args} #{block}" }
+      @mod_loader.send name, *args, &block
     end
   end
 
@@ -77,9 +151,10 @@ module Loom
       @stdout = stdout
       @stderr = stderr
       @exit_status = exit_status
+      @time = Time.now
     end
 
-    attr_reader :command, :stdout, :stderr, :exit_status
+    attr_reader :command, :stdout, :stderr, :exit_status, :time
 
     def success?
       @exit_status == 0
@@ -91,8 +166,9 @@ module Loom
   end
 
   class LocalShell < Shell
-    def initialize
-      super SSHKit::Backend::Local.new
+    def initialize(session, dry_run)
+      super SSHKit::Backend::Local.new, dry_run
+      @session = session
     end
 
     def local

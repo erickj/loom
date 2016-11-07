@@ -82,17 +82,11 @@ module Loom
             return
           end
 
-          if dry_run
-            Loom.log.warn "dry run: #{pattern_description}"
-          else
-            Loom.log.info "running: #{pattern_description}"
-
-            # Each pattern execution needs its own shell and mod loader to
-            # make sure context is reported correctly
-            shell = Loom::Shell.new sshkit_backend
-            mods = Loom::Mods::ModLoader.new shell
-            execute_pattern pattern_ref, shell, mods, host
-          end
+          Loom.log.info "running: #{pattern_description}"
+          # Each pattern execution needs its own shell and mod loader to
+          # make sure context is reported correctly
+          shell = Loom::Shell.new sshkit_backend, dry_run
+          execute_pattern pattern_ref, shell, host
         end
       end
 
@@ -101,11 +95,11 @@ module Loom
       end
     end
 
-    def execute_pattern(pattern_ref, shell, mods, host)
+    def execute_pattern(pattern_ref, shell, host)
       shell_session = shell.session
       result_reporter =
         Loom::Pattern::ResultReporter.new @loom_config, pattern_ref.slug, host, shell_session
-      pattern_ref.call(shell, mods, host)
+      pattern_ref.call(shell.shell_api, host)
       result_reporter.write_report
 
       unless shell_session.success?

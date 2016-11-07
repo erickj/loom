@@ -1,14 +1,23 @@
 module Loom::Mods
-
-  AnonymousModLoadError = Class.new Loom:: LoomError
-
   class Module
-    attr_accessor :shell, :mods, :action_proxy
-    alias_method :_, :shell
+    attr_accessor :shell, :action_proxy, :exec_args
+
+    def initialize(shell, *args)
+      @shell = shell
+      @exec_args = args
+      @action_proxy = self.class.action_proxy self
+    end
 
     class << self
-      def inherited(klass)
-        ModLoader.register_module klass
+
+      def register_mod(name, **opts, &block)
+        ModLoader.register_mod self, name, **opts, &block
+      end
+
+      def required_commands(*cmds)
+        @required_commands ||= []
+        @required_commands.push *cmds unless cmds.empty?
+        @required_commands
       end
 
       def import_actions(action_module, namespace=nil)
@@ -24,14 +33,14 @@ module Loom::Mods
         bound_method_name = [namespace, action_name].compact.join '_'
 
         define_method bound_method_name do |*args, &block|
-          Loom.log.debug1(self) { "executing mod action #{self.class}##{bound_method_name}" }
+          Loom.log.debug1(self) { "exec mod action #{self.class}##{bound_method_name}" }
 
           bound_method = unbound_method.bind self
           bound_method.call *args, &block
 
           action_proxy.proxy_for_namespace namespace
         end
-        Loom.log.debug2(self) { "bound action #{action_name}" }
+        Loom.log.debug2(self) { "bound mod action => #{self.class.name}##{action_name}" }
 
         bound_method_name
       end
@@ -51,37 +60,5 @@ module Loom::Mods
       end
     end
 
-  end
-
-  ##
-  # Singleton class for register and creating mods dynamically
-  class ModLoader
-    using Loom::CoreExt # for String#underscore and String#demodulize
-
-    def initialize(shell)
-      @shell = shell
-    end
-
-    class << self
-      def define_mod_factory(name, mod_klass)
-        define_method name do |*args|
-          mod = mod_klass.new *args
-          mod.action_proxy = mod_klass.action_proxy(mod)
-
-          # self is a ModuleLoader
-          mod.shell = @shell
-          mod.mods = self 
-          mod.action_proxy
-        end
-        Loom.log.debug { "defined_mod_factory #{name}" }
-      end
-
-      def register_module(klass)
-        raise AnonymousModLoadError, 'cannot load anonymous mods' unless klass.name
-
-        define_mod_factory klass.to_s.underscore.to_sym, klass
-        define_mod_factory klass.to_s.demodulize.underscore.to_sym, klass
-      end
-    end
   end
 end

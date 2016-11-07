@@ -84,6 +84,22 @@ EOS
       end
       alias_command :"w", :"weave"
 
+      command :"mods" do |c|
+        c.syntax = "loom mods [mod]"
+        c.description = "Prints the list of registered mods."
+
+        c.action do |mods, options|
+          puts "Loom mods are:"
+          puts ""
+
+          loader = Loom::Pattern::Loader.configure Loom.config
+          Loom::Mods::ModLoader.registered_mods.each do |name, aliases|
+            puts aliases.join(", ")
+            puts "\t#{name}"
+          end
+        end
+      end
+
       command :"patterns" do |c|
         c.syntax = "loom patterns [pattern]"
         c.description = "Prints the list of known patterns."

@@ -1,12 +1,12 @@
 require "loom/mods"
-require_relative "actions"
 
-module Loom::CoreMods::Files
+module Loom::CoreMods
   class Files < Loom::Mods::Module
-    import_actions Actions
-    import_actions Actions::Rsync, :rsync
 
-    def initialize(paths=nil)
+    register_mod :files, :alias => :f
+
+    def initialize(shell, paths=nil)
+      super(shell)
       @paths = [paths].flatten.compact
     end
 
@@ -24,7 +24,7 @@ module Loom::CoreMods::Files
           yield p
         else
           cmd = [flags, p].join ' '
-          shell.send action, cmd
+          shell.execute action, cmd
         end
       end
     end
@@ -40,5 +40,46 @@ module Loom::CoreMods::Files
       end
     end
 
+    module Actions
+
+      def chown(*paths, user: nil, group: nil, **opts)
+        group_arg = group && ":" + group
+
+        for_paths *paths do |p|
+          _.chown [user, group_arg].compact.join, p
+        end
+      end
+
+      def touch(*paths)
+        for_paths *paths, :action => :touch
+      end
+
+      def mkdir(*paths, flags: nil, **opts)
+        for_paths *paths, :action => :mkdir, :flags => flags
+      end
+
+      def append(*paths, text:)
+        for_paths *paths do |p|
+          _.verify "[ -f #{p} ]"
+          _.echo "\"#{text}\" >> #{p}"
+        end
+      end
+
+      def write(*paths, text:)
+        for_paths *paths do |p|
+          _.verify "[ ! -f \"#{p}\" ]"
+          write! p, :text => text
+        end
+      end
+
+      def write!(*paths, text:)
+        for_paths *paths do |p|
+          _.echo "\"#{text}\" > #{p}"
+        end
+      end
+
+    end
   end
+
+  Files.import_actions Files::Actions
 end

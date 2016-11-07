@@ -1,21 +1,80 @@
+require "./lib/coremods/all"
+
 include Loom::Pattern::Container
 
-pattern :uptime do |_, mods, ctx|
-  _.uptime
-  _.execute "echo out to stderr 1>&2"
+pattern :uptime do |loom, ctx|
+  loom << :uptime
+  loom << "echo out to stderr 1>&2"
+
+  loom.local << :hostname
 end
 
-pattern :fail do |_, mods, ctx|
-  _.false
-  _.execute "echo out 1>&2"
+pattern :subshell do |loom, ctx|
+  loom << "(echo $$; echo $BASHPID; whoami)"
+  loom << "(sudo -i -u root whoami)"
+
+  loom.local << "(echo $$; echo $BASHPID; whoami)"
+  loom.local << "(sudo -i -u root whoami)"
+end
+
+pattern :sudo do |loom, ctx|
+  loom.sudo "root" do
+    loom << "pwd"
+    loom << :whoami
+    loom << "touch loom.file"
+
+    loom.sudo do
+      loom << :whoami
+      loom << "pwd"
+      loom << "touch root.file"
+
+      loom.sudo :postgres do
+        loom << :whoami
+        loom << "cd /tmp; touch postgres.file"
+      end
+
+      loom << "touch root.file2"
+    end
+  end
+
+  loom.cd "/tmp" do
+    loom << :pwd
+    loom.sudo :root, :pwd do loom << :pwd end
+    loom << :pwd
+  end
+
+end
+
+pattern :cd do |loom, ctx|
+  loom.cd "/etc" do
+    loom << :pwd
+  end
+end
+
+pattern :fail do |loom, ctx|
+  unless loom << :false
+    loom << "echo i am false"
+  end
+end
+
+pattern :users do |loom, ctx|
+  loom.sudo do
+    loom.users.add_user :deploy, uid: 2000, home_dir: "/opt/deploy"
+    loom.users.add_user :nara, uid: 1001, home_dir: "/home/nara"
+    loom.users.add_user :marrian, home_dir: "/home/marrian"
+
+    loom.users.add_system_user :app, uid: 900
+    loom.users.add_system_user :batch, uid: 901
+    loom.users.add_system_user :sysuserx
+  end
 end
 
 
 module SSH
   include Loom::Pattern::Container
 
-  pattern :harden do |_, mods, ctx|
-    _.echo "so hard for #{ctx}"
+  pattern :harden do |loom, ctx|
+    loom.x :echo, "so hard for #{ctx}"
   end
 end
 
