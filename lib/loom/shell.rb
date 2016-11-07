@@ -24,8 +24,12 @@ module Loom
       @local ||= LocalShell.new @session, @dry_run
     end
 
+    def test(*check)
+      @sshkit_backend.test *check
+    end
+
     def verify(*check)
-      raise VerifyError, check unless @sshkit_backend.test *check
+      raise VerifyError, check unless test *check
     end
 
     def verify_which(command)
@@ -95,12 +99,6 @@ module Loom
 
       cmd = "cd #{@sudo_dir};" << cmd if @sudo_dir
       cmd
-    end
-
-    [:test].each do |method|
-      define_method method do |*args, &block|
-        @sshkit_backend.send method, *args, &block
-      end
     end
   end
 
