@@ -9,42 +9,6 @@ pattern :uptime do |loom, ctx|
   loom.local << :hostname
 end
 
-pattern :subshell do |loom, ctx|
-  loom << "(echo $$; echo $BASHPID; whoami)"
-  loom << "(sudo -i -u root whoami)"
-
-  loom.local << "(echo $$; echo $BASHPID; whoami)"
-  loom.local << "(sudo -i -u root whoami)"
-end
-
-pattern :sudo do |loom, ctx|
-  loom.sudo "root" do
-    loom << "pwd"
-    loom << :whoami
-    loom << "touch loom.file"
-
-    loom.sudo do
-      loom << :whoami
-      loom << "pwd"
-      loom << "touch root.file"
-
-      loom.sudo :postgres do
-        loom << :whoami
-        loom << "cd /tmp; touch postgres.file"
-      end
-
-      loom << "touch root.file2"
-    end
-  end
-
-  loom.cd "/tmp" do
-    loom << :pwd
-    loom.sudo :root, :pwd do loom << :pwd end
-    loom << :pwd
-  end
-
-end
-
 pattern :cd do |loom, ctx|
   loom.cd "/etc" do
     loom << :pwd
@@ -57,36 +21,67 @@ pattern :fail do |loom, ctx|
   end
 end
 
-pattern :users do |loom, ctx|
-  loom.sudo do
-    loom.users.add_user :deploy, uid: 2000, home_dir: "/opt/deploy"
-    loom.users.add_user :nara, uid: 1001, home_dir: "/home/nara"
-    loom.users.add_user :marrian, home_dir: "/home/marrian"
-
-    loom.users.add_system_user :app, uid: 900
-    loom.users.add_system_user :batch
-
-    loom.users.remove_user :deploy
-    loom.users.remove_user :nara
-    loom.users.remove_user :marrian
-    loom.users.remove_user :app
-    loom.users.remove_user :batch
-  end
-end
-
-
-module SSH
+module Shell
   include Loom::Pattern::Container
 
-  pattern :harden do |loom, ctx|
-    loom.x :echo, "so hard for #{ctx}"
+  pattern :subshell do |loom, ctx|
+    loom << "(echo $$; echo $BASHPID; whoami)"
+    loom << "(sudo -i -u root whoami)"
+
+    loom.local << "(echo $$; echo $BASHPID; whoami)"
+    loom.local << "(sudo -i -u root whoami)"
+  end
+
+  pattern :sudo do |loom, ctx|
+    loom.sudo "root" do
+      loom << "pwd"
+      loom << :whoami
+      loom << "touch loom.file"
+
+      loom.sudo do
+        loom << :whoami
+        loom << "pwd"
+        loom << "touch root.file"
+
+        loom.sudo :postgres do
+          loom << :whoami
+          loom << "cd /tmp; touch postgres.file"
+        end
+
+        loom << "touch root.file2"
+      end
+    end
+
+    loom.cd "/tmp" do
+      loom << :pwd
+      loom.sudo :root, :pwd do loom << :pwd end
+      loom << :pwd
+    end
+
   end
 end
 
 module Users
   include Loom::Pattern::Container
 
-  pattern :init do |*args|
-    puts "initing users"
+  pattern :users do |loom, ctx|
+    loom.sudo do
+      loom.users.add :deploy, uid: 2000, home_dir: "/opt/deploy"
+      loom.users.add :nara, uid: 1001, home_dir: "/home/nara"
+      loom.users.add :marrian, home_dir: "/home/marrian"
+
+      loom.users.add_system_user :app, uid: 900
+      loom.users.add_system_user :batch
+
+      loom.users.remove :deploy
+      loom.users.remove :nara
+      loom.users.remove :marrian
+      loom.users.remove :app
+      loom.users.remove :batch
+    end
+  end
+
+  pattern :sudoers do |loom, ctx|
+    loom.sudo { loom.users.make_sudoer :postgres }
   end
 end

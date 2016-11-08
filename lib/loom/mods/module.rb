@@ -1,4 +1,7 @@
 module Loom::Mods
+
+  ModActionError = Class.new Loom::LoomError
+
   class Module
     attr_accessor :shell, :action_proxy, :exec_args
 

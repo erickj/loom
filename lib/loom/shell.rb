@@ -25,7 +25,7 @@ module Loom
     end
 
     def test(*check)
-      @sshkit_backend.test *check
+      @sshkit_backend.test create_command(*check)
     end
 
     def verify(*check)

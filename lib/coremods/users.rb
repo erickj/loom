@@ -3,21 +3,40 @@ require "loom/mods"
 module Loom::CoreMods
   class Users < Loom::Mods::Module
 
+    SudoersDNoExistError = Class.new Loom::Mods::ModActionError
+    SudoersDNotIncluded = Class.new Loom::Mods::ModActionError
+
     register_mod :users
     required_commands :useradd, :userdel, :getent
+
+    SUDOERS_FILE = "/etc/sudoers"
+    SUDOERS_DIR = "/etc/sudoers.d"
+    LOOM_SUDOERS_FILE = SUDOERS_DIR + "/90-loom-sudoers"
 
     def user_exists?(user)
       shell.test :getent, "passwd #{user}"
     end
 
+    def includes_sudoers?
+      shell.test :grep, %Q[-e "^#includedir #{SUDOERS_DIR}$" #{SUDOERS_FILE}]
+    end
+
+    def sudoersd_exists?
+      shell.test :test, %Q[-d #{SUDOERS_DIR}]
+    end
+
+    def has_sudoer_conf?(conf)
+      shell.test :grep, %Q[-e "^#{conf}$" #{LOOM_SUDOERS_FILE}]
+    end
+
     module Actions
-      def add_user(user,
-                   home_dir: nil,
-                   login_shell: "/bin/bash",
-                   uid: nil,
-                   gid: nil,
-                   groups: [],
-                   is_system_user: nil)
+      def add(user,
+              home_dir: nil,
+              login_shell: "/bin/bash",
+              uid: nil,
+              gid: nil,
+              groups: [],
+              is_system_user: nil)
         if user_exists? user
           Loom.log.warn "add_user skipping existing user => #{user}"
           return
@@ -41,16 +60,30 @@ module Loom::CoreMods
           return
         end
 
-        add_user user, is_system_user: true, login_shell: "/bin/false", **user_fields
+        add user, is_system_user: true, login_shell: "/bin/false", **user_fields
       end
 
-      def remove_user(user)
+      def remove(user)
         unless user_exists? user
           Loom.log.warn "remove_user skipping non-existant user => #{user}"
           return
         end
 
         shell.exec "userdel -r %s" % user
+      end
+
+      def make_sudoer(user, sudoer_conf=nil)
+        raise SudoersDNotIncluded unless includes_sudoers?
+        raise SudoersDNoExistError unless sudoersd_exists?
+
+        sudoer_conf ||= "#{user} ALL=(ALL) NOPASSWD:ALL"
+        if has_sudoer_conf? sudoer_conf
+          Loom.log.warn "make_sudoer skipping conf #{sudoer_conf} => conf already exists"
+          return
+        end
+
+        shell.exec %Q[echo "#{sudoer_conf}" >> #{LOOM_SUDOERS_FILE}]
+        shell.exec :chmod, "0440 #{LOOM_SUDOERS_FILE}"
       end
     end
   end
