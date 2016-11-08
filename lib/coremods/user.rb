@@ -1,12 +1,12 @@
 require "loom/mods"
 
 module Loom::CoreMods
-  class Users < Loom::Mods::Module
+  class User < Loom::Mods::Module
 
     SudoersDNoExistError = Class.new Loom::Mods::ModActionError
     SudoersDNotIncluded = Class.new Loom::Mods::ModActionError
 
-    register_mod :users
+    register_mod :user
     required_commands :useradd, :userdel, :getent
 
     SUDOERS_FILE = "/etc/sudoers"
@@ -88,5 +88,5 @@ module Loom::CoreMods
     end
   end
 
-  Users.import_actions Users::Actions
+  User.import_actions User::Actions
 end

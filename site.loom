@@ -61,27 +61,27 @@ module Shell
   end
 end
 
-module Users
+module User
   include Loom::Pattern::Container
 
-  pattern :users do |loom, ctx|
+  pattern :add_users do |loom, ctx|
     loom.sudo do
-      loom.users.add :deploy, uid: 2000, home_dir: "/opt/deploy"
-      loom.users.add :nara, uid: 1001, home_dir: "/home/nara"
-      loom.users.add :marrian, home_dir: "/home/marrian"
+      loom.user.add :deploy, uid: 2000, home_dir: "/opt/deploy"
+      loom.user.add :nara, uid: 1001, home_dir: "/home/nara"
+      loom.user.add :marrian, home_dir: "/home/marrian"
 
-      loom.users.add_system_user :app, uid: 900
-      loom.users.add_system_user :batch
+      loom.user.add_system_user :app, uid: 900
+      loom.user.add_system_user :batch
 
-      loom.users.remove :deploy
-      loom.users.remove :nara
-      loom.users.remove :marrian
-      loom.users.remove :app
-      loom.users.remove :batch
+      loom.user.remove :deploy
+      loom.user.remove :nara
+      loom.user.remove :marrian
+      loom.user.remove :app
+      loom.user.remove :batch
     end
   end
 
   pattern :sudoers do |loom, ctx|
-    loom.sudo { loom.users.make_sudoer :postgres }
+    loom.sudo { loom.user.make_sudoer :postgres }
   end
 end
