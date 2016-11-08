@@ -41,6 +41,7 @@ module Loom
 
       rescue PatternExecutionError => e
         Loom.log.error "error executing patterns => #{e}"
+        Loom.log.debug e.backtrace.join "\n"
         exit 1
       rescue Loom::LoomError => e
         Loom.log.error "loom error => #{e.inspect}"

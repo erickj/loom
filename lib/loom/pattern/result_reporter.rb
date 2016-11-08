@@ -41,7 +41,7 @@ module Loom::Pattern
       report = ["--- #{scenario_string}"]
       report << "Completed in: %01.3fs" % @delta_t
 
-      cmds.each do |cmd|
+      cmds.find_all { |cmd| !cmd.is_test }.each do |cmd|
         if !cmd.success? || @loom_config.run_verbose
           report.concat generate_cmd_report(cmd)
         end
@@ -52,6 +52,7 @@ module Loom::Pattern
 
     def generate_cmd_report(cmd)
       status = cmd.success? ? "Success" : "Failed"
+
       report = []
       report << ""
       report << "--- #{status} Command ---"

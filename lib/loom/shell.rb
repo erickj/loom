@@ -24,8 +24,20 @@ module Loom
       @local ||= LocalShell.new @session, @dry_run
     end
 
-    def test(*check)
-      @sshkit_backend.test create_command(*check)
+    def test(*cmd, check: :exit_status)
+      execute *cmd, :is_test => true
+      # This smells like a hack. We can't rely on Command#is_success?
+      # here (returned from execute) because we're overriding it with
+      # :is_test => true.
+
+      case check
+      when :exit_status
+        @session.last.exit_status == 0
+      when :stderr
+        @session.last.stderr.empty?
+      else
+        raise "unknown test check => #{check}"
+      end
     end
 
     def verify(*check)
@@ -64,7 +76,7 @@ module Loom
       result ? @session.last.stdout.strip : nil
     end
 
-    def execute(*args)
+    def execute(*args, is_test: false)
       cmd = create_command args
       Loom.log.debug { "exec => #{cmd}" }
 
@@ -81,7 +93,7 @@ module Loom
         cmd,
         :raise_on_non_zero_exit => false)
 
-      @session << CommandResult.create_from_sshkit_command(sshkit_cmd)
+      @session << CommandResult.create_from_sshkit_command(sshkit_cmd, is_test)
 
       Loom.log.debug @session.last.stdout unless @session.last.stdout.empty?
       Loom.log.debug @session.last.stderr unless @session.last.stderr.empty?
@@ -105,7 +117,7 @@ module Loom
   ##
   # A facade for the shell API exposed to Loom files
   class ShellApi
-    extend Forwardable
+
     def initialize(shell)
       @shell = shell
       @mod_loader = shell.mod_loader
@@ -139,27 +151,31 @@ module Loom
 
     def <<(command_result)
       @command_results << command_result
-      @success &&= command_result.success?
+      unless command_result.is_test
+        @success &&= command_result.success?
+      end
     end
   end
 
   class CommandResult
-    def initialize(command, stdout, stderr, exit_status)
+    def initialize(command, stdout, stderr, exit_status, is_test)
       @command = command
       @stdout = stdout
       @stderr = stderr
       @exit_status = exit_status
+      @is_test = is_test
       @time = Time.now
     end
 
-    attr_reader :command, :stdout, :stderr, :exit_status, :time
+    attr_reader :command, :stdout, :stderr, :exit_status, :time, :is_test
 
     def success?
       @exit_status == 0
     end
 
-    def self.create_from_sshkit_command(cmd)
-      return CommandResult.new cmd.command, cmd.full_stdout, cmd.full_stderr, cmd.exit_status
+    def self.create_from_sshkit_command(cmd, is_test)
+      CommandResult.new \
+        cmd.command, cmd.full_stdout, cmd.full_stderr, cmd.exit_status, is_test
     end
   end
 

@@ -40,8 +40,6 @@ module Loom::Mods
 
           bound_method = unbound_method.bind self
           bound_method.call *args, &block
-
-          action_proxy.proxy_for_namespace namespace
         end
         Loom.log.debug2(self) { "bound mod action => #{self.class.name}##{action_name}" }
 

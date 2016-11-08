@@ -2,20 +2,20 @@ require "./lib/coremods/all"
 
 include Loom::Pattern::Container
 
-pattern :uptime do |loom, ctx|
+pattern :uptime do |loom, vars|
   loom << :uptime
   loom << "echo out to stderr 1>&2"
 
   loom.local << :hostname
 end
 
-pattern :cd do |loom, ctx|
+pattern :cd do |loom, vars|
   loom.cd "/etc" do
     loom << :pwd
   end
 end
 
-pattern :fail do |loom, ctx|
+pattern :fail do |loom, vars|
   unless loom << :false
     loom << "echo i am false"
   end
@@ -24,7 +24,7 @@ end
 module Shell
   include Loom::Pattern::Container
 
-  pattern :subshell do |loom, ctx|
+  pattern :subshell do |loom, vars|
     loom << "(echo $$; echo $BASHPID; whoami)"
     loom << "(sudo -i -u root whoami)"
 
@@ -32,7 +32,7 @@ module Shell
     loom.local << "(sudo -i -u root whoami)"
   end
 
-  pattern :sudo do |loom, ctx|
+  pattern :sudo do |loom, vars|
     loom.sudo "root" do
       loom << "pwd"
       loom << :whoami
@@ -64,7 +64,7 @@ end
 module User
   include Loom::Pattern::Container
 
-  pattern :add_users do |loom, ctx|
+  pattern :add_users do |loom, vars|
     loom.sudo do
       loom.user.add :deploy, uid: 2000, home_dir: "/opt/deploy"
       loom.user.add :nara, uid: 1001, home_dir: "/home/nara"
@@ -81,7 +81,21 @@ module User
     end
   end
 
-  pattern :sudoers do |loom, ctx|
+  pattern :sudoers do |loom, vars|
     loom.sudo { loom.user.make_sudoer :postgres }
+  end
+end
+
+module Package
+  include Loom::Pattern::Container
+
+  pattern :update_cache do |loom, vars|
+    loom.sudo { loom.pkg.update_cache }
+  end
+
+  pattern :install_httpd do |loom, vars|
+    loom.sudo do
+      loom.pkg.install vars[:apache] unless loom.pkg.installed? vars[:apache]
+    end
   end
 end

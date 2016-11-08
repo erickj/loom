@@ -1,0 +1,86 @@
+module Loom::CoreMods
+  class Package < Loom::Mods::Module
+
+    class PkgAdapter
+
+      attr_reader :shell
+
+      def initialize(shell)
+        @shell = shell
+      end
+
+      def installed?(pkg_name)
+        raise 'not implemnted'
+      end
+
+      def install(pkg_name)
+        raise 'not implemented'
+      end
+
+      def uninstall(pkg_name)
+        raise 'not implemented'
+      end
+
+      def update_cache
+        raise 'not implemented'
+      end
+
+      def upgrade(pkg_name)
+        raise 'not implemented'
+      end
+    end
+
+    class DpkgAdapter < PkgAdapter
+
+      def installed?(pkg_name)
+        shell.test :dpkg, "-s #{pkg_name}"
+      end
+    end
+
+    class AptAdapter < DpkgAdapter
+
+      def install(pkg_name)
+        shell.exec :echo, "apt-get install #{pkg_name}"
+      end
+
+      def uninstall(pkg_name)
+        shell.exec :echo, "apt uninstall"
+      end
+
+      def update_cache
+        shell.exec :apt, "update"
+      end
+
+      def upgrade(pkg_name)
+        raise 'not implemented'
+      end
+    end
+
+    class RpmAdapter < PkgAdapter
+
+      def installed?(pkg_name)
+        shell.test :rpm, "-q #{pkg_name}"
+      end
+
+    end
+
+    class DnfAdapter < RpmAdapter
+
+      def install(pkg_name)
+        shell.exec :dnf, "install #{package}"
+      end
+
+      def uninstall(pkg_name)
+        shell.exec :echo, "dnf uninstall"
+      end
+
+      def update_cache
+        shell.exec :dnf, "updateinfo"
+      end
+
+      def upgrade(pkg_name)
+        raise 'not implemented'
+      end
+    end
+  end
+end
