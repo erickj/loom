@@ -9,6 +9,10 @@ module Loom::CoreMods
         @shell = shell
       end
 
+      def ensure_installed(pkg_name)
+        install(pkg_name) unless installed?(pkg_name)
+      end
+
       def installed?(pkg_name)
         raise 'not implemnted'
       end
@@ -27,6 +31,16 @@ module Loom::CoreMods
 
       def upgrade(pkg_name)
         raise 'not implemented'
+      end
+    end
+
+    class GemAdapter < PkgAdapter
+      def installed?(pkg_name)
+        shell.test :ruby, "-r#{pkg_name} -e exit"
+      end
+
+      def install(pkg_name)
+        shell.exec :gem, "install #{pkg_name}"
       end
     end
 

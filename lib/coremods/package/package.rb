@@ -16,6 +16,24 @@ module Loom::CoreMods
       @pkg_adapter = install_adapter
     end
 
+    def get(adapter)
+      case adapter.to_sym
+      when :dnf
+        DnfAdapter.new shell
+      when :rpm
+        RpmAdapter.new shell
+      when :apt
+        AptAdapter.new shell
+      when :dpkg
+        DpkgAdapter.new shell
+      when :gem
+        GemAdapter.new shell
+      else
+        raise UnsupportedPackageManager, adapter
+      end
+    end
+    alias_method :[], :get
+
     def install_adapter
       if shell.test :which, "dnf"
         DnfAdapter.new shell
