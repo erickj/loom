@@ -68,6 +68,13 @@ EOS
         Loom.configure { |c| c.inventory_groups = groups }
       end
 
+      global_option "-X", "--custom-config KEY=VAL", String do |config_value|
+        key, val, *_rest = config_value.split "="
+        Loom.configure do |c|
+          c[key.to_sym] = val
+        end
+      end
+
       default_command :weave
 
       command :"weave" do |c|
@@ -75,9 +82,16 @@ EOS
         c.description = "Applies the patterns to the active host inventory. " +
                         "This is the default."
 
+        c.option "-A", "--all",
+                 "Run all loaded the patterns"
         c.option "-n", "--dry-run",
                  "Don't run the patterns, only connect and log the expected patterns"
         c.action do |patterns, options|
+          if options.all
+            loader = Loom::Pattern::Loader.configure Loom.config
+            patterns = loader.loaded_patterns.map(&:slug)
+          end
+
           runner = Loom::Runner.new Loom.config, patterns
           runner.run options.dry_run
         end
@@ -104,13 +118,19 @@ EOS
         c.syntax = "loom patterns [pattern]"
         c.description = "Prints the list of known patterns."
 
+        c.option "--print", "Only print the space separted pattern names."
         c.action do |patterns, options|
+          loader = Loom::Pattern::Loader.configure Loom.config
+          pattern_slugs = loader.loaded_patterns.map(&:slug)
+          if options.print
+            puts pattern_slugs.join " "
+            return
+          end
+
           puts "Loom patterns are:"
           puts ""
-          loader = Loom::Pattern::Loader.configure Loom.config
 
-          pattern_refs = loader.loaded_patterns
-          max_slug_len = pattern_refs.map(&:slug).map(&:size).reduce(0) { |*args| args.max }
+          max_slug_len = pattern_slugs.map(&:size).reduce(0) { |*args| args.max }
           puts "\t" + "Pattern:".ljust(max_slug_len) + "\tSource:"
           loader.loaded_patterns.each do |ref|
             puts "\t#{ref.slug.ljust(max_slug_len)}\t#{ref.source_file}"

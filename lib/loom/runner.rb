@@ -111,8 +111,8 @@ module Loom
       unless shell_session.success?
         @pattern_execution_failures << result_reporter.failure_summary
 
-        failure_strategy = @loom_config.run_failure_stratgy
-        case failure_strategy
+        failure_strategy = @loom_config.run_failure_strategy
+        case failure_strategy.to_sym
         when :exclude_host
           Loom.log.warn "disabling host per :run_failure_strategy => #{failure_strategy}"
           @inventory_list.disable hostname

@@ -45,7 +45,7 @@ module Loom::Facts
     attr_reader :hostname
 
     def get(fact_name)
-      @fact_map[fact_name.to_sym].dup
+      @fact_map[fact_name.to_sym].dup rescue nil
     end
     alias_method :[], :get
 

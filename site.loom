@@ -31,7 +31,7 @@ module Shell
     loom << "(sudo -i -u root whoami)"
 
     loom.local << "(echo $$; echo $BASHPID; whoami)"
-    loom.local << "(sudo -i -u root whoami)"
+#    loom.local << "(sudo -i -u root whoami)"
   end
 
   pattern :sudo do |loom, facts|
@@ -92,11 +92,11 @@ module Package
   include Loom::Pattern
 
   before do |shell, facts|
-    puts "in before"
+    puts "#{self} in before"
   end
 
   after do
-    puts "in after"
+    puts "#{self} in after"
   end
 
   pattern :update_cache do |loom, facts|
@@ -112,7 +112,6 @@ module Package
   pattern :install_facter do |loom, facts|
     loom.sudo do
       loom.pkg[:gem].ensure_installed :facter
-
     end
   end
 end
