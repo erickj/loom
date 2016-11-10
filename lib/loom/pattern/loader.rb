@@ -2,7 +2,6 @@ module Loom::Pattern
 
   SiteFileNotFound = Class.new Loom::LoomError
   UnknownPattern = Class.new Loom::LoomError
-  PollutedPatternContainer = Class.new Loom::LoomError
 
   class Loader
     class << self
@@ -49,17 +48,13 @@ module Loom::Pattern
       end
       visited_modules[shell_module.name] = true
 
-      if shell_module.included_modules.include? Loom::Pattern::Container
+      if shell_module.included_modules.include? Loom::Pattern
         Loom.log.debug1(self) { "registering pattern module => #{shell_module.name}" }
 
-        if shell_module.included_modules.size > 1
-          # TODO: A DSL to define pattern methods would be more appropriate here.
-          raise PollutedPatternContainer,
-                "PatternContainer <#{shell_module.name}> should include no other modules"
-        end
-
         trimmed_module_name = PatternNameTrimer.trim_shell_from_module_name shell_module
-        shell_module.instance_methods.each do |pattern_method_name|
+
+        hooks = shell_module.hooks
+        shell_module.pattern_methods.each do |pattern_method_name|
           unbound_method = shell_module.instance_method pattern_method_name
 
           # Cleanup the slug name from the fully qualified
@@ -68,8 +63,8 @@ module Loom::Pattern
           pattern_slug = PatternNameTrimer.create_pattern_slug \
             trimmed_module_name, pattern_method_name
 
-          ref = PatternReference.new(
-            pattern_slug, unbound_method, trimmed_module_name, source_file)
+          ref = Loom::Pattern::Reference.new(
+            pattern_slug, unbound_method, trimmed_module_name, source_file, hooks)
           add_pattern_ref ref
         end
       end
@@ -105,6 +100,7 @@ module Loom::Pattern
     end
 
     module Shell
+      include Loom::Pattern
       # Intentionally left empty - used to load patterns into.
     end
   end

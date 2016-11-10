@@ -102,8 +102,9 @@ module Loom
 
     def execute_pattern(pattern_ref, shell, fact_set)
       shell_session = shell.session
+      hostname = fact_set.hostname
       result_reporter = Loom::Pattern::ResultReporter.new(
-        @loom_config, pattern_ref.slug, fact_set.hostname, shell_session)
+        @loom_config, pattern_ref.slug, hostname, shell_session)
       pattern_ref.call(shell.shell_api, fact_set)
       result_reporter.write_report
 
@@ -113,8 +114,8 @@ module Loom
         failure_strategy = @loom_config.run_failure_stratgy
         case failure_strategy
         when :exclude_host
-          Loom.log.warn "disabling host per :run_failure_strategy => #{host.hostname}"
-          @inventory_list.disable host.hostname
+          Loom.log.warn "disabling host per :run_failure_strategy => #{failure_strategy}"
+          @inventory_list.disable hostname
         when :fail_fast
           Loom.log.error "erroring out of failed scenario per :run_failure_strategy"
           raise FailFastExecutionError, result_reporter.failure_summary

@@ -1,7 +1,5 @@
 require "./lib/coremods/all"
 
-include Loom::Pattern::Container
-
 pattern :uptime do |loom, facts|
   loom << :uptime
   loom << "echo out to stderr 1>&2"
@@ -26,7 +24,7 @@ pattern :fail do |loom, facts|
 end
 
 module Shell
-  include Loom::Pattern::Container
+  include Loom::Pattern
 
   pattern :subshell do |loom, facts|
     loom << "(echo $$; echo $BASHPID; whoami)"
@@ -66,7 +64,7 @@ module Shell
 end
 
 module User
-  include Loom::Pattern::Container
+  include Loom::Pattern
 
   pattern :add_users do |loom, facts|
     loom.sudo do
@@ -91,7 +89,15 @@ module User
 end
 
 module Package
-  include Loom::Pattern::Container
+  include Loom::Pattern
+
+  before do |shell, facts|
+    puts "in before"
+  end
+
+  after do
+    puts "in after"
+  end
 
   pattern :update_cache do |loom, facts|
     loom.sudo { loom.pkg.update_cache }
@@ -106,6 +112,7 @@ module Package
   pattern :install_facter do |loom, facts|
     loom.sudo do
       loom.pkg[:gem].ensure_installed :facter
+
     end
   end
 end

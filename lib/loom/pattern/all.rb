@@ -1,3 +1,5 @@
-require_relative "pattern_reference"
+require_relative "hook"
+require_relative "dsl"
+require_relative "reference"
 require_relative "loader"
 require_relative "result_reporter"
