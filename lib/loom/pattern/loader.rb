@@ -54,6 +54,8 @@ module Loom::Pattern
         trimmed_module_name = PatternNameTrimer.trim_shell_from_module_name shell_module
 
         hooks = shell_module.hooks
+        raise "#{hooks.size} hooks #{hooks} => #{shell_module}" if hooks.size > 2
+
         shell_module.pattern_methods.each do |pattern_method_name|
           unbound_method = shell_module.instance_method pattern_method_name
 

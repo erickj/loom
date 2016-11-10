@@ -15,15 +15,6 @@ module Loom::Pattern
       define_method method_name, &block
     end
 
-    def let(name, &block)
-      @let_fields ||= {}
-      @let_fields[name.to_sym] = yield
-    end
-
-    def let_fields
-      @let_fields || {}
-    end
-
     def hooks
       @hooks || []
     end
