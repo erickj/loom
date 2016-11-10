@@ -16,6 +16,10 @@ module Loom
       @config
     end
 
+    def reset_config
+      @config = nil
+    end
+
     def log
       @logger ||= config_logger
     end

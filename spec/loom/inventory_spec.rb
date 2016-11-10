@@ -14,7 +14,8 @@ describe Loom::Inventory do
   INVENTORY_HOSTLIST = [
     'inv.host1',
     'inv.host2',
-    :inventory_group => ['inv.group.host']
+    :inventory_group => ['inv.group.host'],
+    'string_group' => ['string.group.host']
   ]
 
   class TmpInventoryFile
@@ -27,6 +28,17 @@ describe Loom::Inventory do
         end
         yield
       end
+    end
+  end
+
+  CONFIG_DEFAULTS = {
+    :loom_search_paths => []
+  }
+
+  let(:config_map) { {} }
+  let(:config) do
+    Loom::Config.configure do |c|
+      CONFIG_DEFAULTS.merge(config_map).each { |k,v| c[k] = v }
     end
   end
 
@@ -74,14 +86,7 @@ describe Loom::Inventory do
 
   context "#total_inventory" do
 
-    subject do
-      config = Loom::Config.configure do |c|
-        config_map.each { |k,v| c[k] = v }
-      end
-      Loom::Inventory::InventoryList.total_inventory config
-    end
-
-    let(:config_map) { {} }
+    subject { Loom::Inventory::InventoryList.total_inventory config }
 
     context "with explicit hosts configured" do
 
@@ -102,7 +107,8 @@ describe Loom::Inventory do
       end
 
       it "finds hosts in the tmp config" do
-        expect(subject.hostnames).to match_array %w[inv.host1 inv.host2 inv.group.host]
+        expected = %w[inv.host1 inv.host2 inv.group.host string.group.host]
+        expect(subject.hostnames).to match_array expected
       end
 
     end
@@ -110,12 +116,7 @@ describe Loom::Inventory do
 
   context "#active_inventory" do
 
-    subject do
-      config = Loom::Config.configure do |c|
-        config_map.each { |k,v| c[k] = v }
-      end
-      Loom::Inventory::InventoryList.active_inventory config
-    end
+    subject { Loom::Inventory::InventoryList.active_inventory config }
 
     context "with inventory file" do
 
@@ -139,12 +140,14 @@ describe Loom::Inventory do
 
         # To be passed into the TmpInventoryFile.transaction by :around
         let(:config_map) do
-          {:inventory_groups => ['inventory_group'], :loom_search_paths => []}
+          {:inventory_groups => [:inventory_group, :string_group],
+           :loom_search_paths => []}
         end
 
         it "gets only explicit hosts from config" do
-          expect(subject.hostnames).to match_array %[inv.group.host]
+          expect(subject.hostnames).to match_array %w[inv.group.host string.group.host]
         end
+
       end
     end
   end

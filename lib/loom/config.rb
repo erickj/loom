@@ -99,7 +99,7 @@ module Loom
           unless config_files.empty?
             Loom.log.debug1(self) { "found config files => #{config_files}" }
           end
-        end
+        end.uniq
       end
     end
   end

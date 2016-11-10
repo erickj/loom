@@ -29,7 +29,8 @@ module Loom
           fileset = InventoryFileSet.new inventory_files(loom_config)
           groups = loom_config.inventory_groups.map(&:to_sym).reduce({}) do |map, group|
             Loom.log.debug2(self) { "looking for group => #{group}" }
-            map[group] = fileset.hostgroup_map[group] if fileset.hostgroup_map.key? group
+            key = group.to_sym
+            map[key] = fileset.hostgroup_map[key] if fileset.hostgroup_map.key? key
             map
           end
           Loom.log.debug1(self) { "groups map => #{groups}" }
@@ -95,7 +96,9 @@ module Loom
           i.each do |entry|
             if entry.is_a? Hash
               Loom.log.debug "merging groups in #{entry}"
-              map.merge! entry
+              entry.each do |k,v|
+                map[k.to_sym] = v
+              end
             end
           end
           map
