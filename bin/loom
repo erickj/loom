@@ -119,6 +119,21 @@ EOS
       end
       alias_command :"p", :"patterns"
 
+      command :facts do |c|
+        c.syntax = "loom facts"
+        c.description = "Prints the set of facts for the active inventory."
+
+        c.action do |arg, options|
+          inventory = Loom::Inventory::InventoryList.active_inventory Loom.config
+          fact_providers = Loom::Facts.fact_providers Loom.config
+          inventory.hosts.each do |host_spec|
+            puts "Facts for host: [#{host_spec.hostname}]"
+            puts Loom::Facts.fact_set(host_spec, fact_providers).facts.to_yaml
+          end
+        end
+      end
+      alias_command :f, :facts
+
       command :"config" do |c|
         c.syntax = "loom config [options]"
         c.description = "Print the config."

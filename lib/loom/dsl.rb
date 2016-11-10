@@ -17,14 +17,20 @@ module Loom
         raise UnexpectedHostError, "not a HostSpec => #{spec}" unless spec.is_a? HostSpec
       end
 
-      execution_block = lambda do |host|
-        Loom.log.debug1(self) { "connecting to host => #{host.hostname}" }
+      host_spec_map = host_specs.reduce({}) do |map, spec|
+        map[spec.hostname] = spec
+        map
+      end
+
+      execution_block = lambda do |sshkit_host|
+        host_spec = host_spec_map[sshkit_host.hostname]
+        Loom.log.debug1(self) { "connecting to host => #{host_spec.hostname}" }
         sshkit_backend = self
 
         begin
-          yield sshkit_backend, host
+          yield sshkit_backend, host_spec
         rescue SocketError => e
-          Loom.log.error "error connecting to host => #{host.hostname}"
+          Loom.log.error "error connecting to host => #{host_spec.hostname}"
           raise SSHConnectionError, e
         end
       end

@@ -14,6 +14,8 @@ module Loom
 
       @pattern_loader = Loom::Pattern::Loader.configure @loom_config
       @inventory_list = Loom::Inventory::InventoryList.active_inventory @loom_config
+      @fact_providers = Loom::Facts.fact_providers @loom_config
+
       @pattern_execution_failures = []
       @result_reports = []
 
@@ -71,23 +73,25 @@ module Loom
       # this alias
       inventory_list = @inventory_list
 
-      on_host active_hosts do |sshkit_backend, host|
+      on_host active_hosts do |sshkit_backend, host_spec|
         pattern_refs.each do |pattern_ref|
           slug = pattern_ref.slug
-          hostname = host.hostname
+          hostname = host_spec.hostname
 
-          pattern_description = "#{hostname} => #{slug}"
-          if inventory_list.disabled? host.hostname
+          pattern_description = "[#{hostname}:#{slug}]"
+          if inventory_list.disabled? hostname
             Loom.log.warn "host disabled due to previous failure, " +
                           "skipping: #{pattern_description}"
             return
           end
 
-          Loom.log.info "running: #{pattern_description}"
+          Loom.log.info "running pattern => #{pattern_description}"
           # Each pattern execution needs its own shell and mod loader to
           # make sure context is reported correctly
           shell = Loom::Shell.new sshkit_backend, dry_run
-          execute_pattern pattern_ref, shell, host
+          fact_set = Loom::Facts.fact_set host_spec, @fact_providers
+
+          execute_pattern pattern_ref, shell, fact_set
         end
       end
 
@@ -96,11 +100,11 @@ module Loom
       end
     end
 
-    def execute_pattern(pattern_ref, shell, host)
+    def execute_pattern(pattern_ref, shell, fact_set)
       shell_session = shell.session
-      result_reporter =
-        Loom::Pattern::ResultReporter.new @loom_config, pattern_ref.slug, host, shell_session
-      pattern_ref.call(shell.shell_api, host)
+      result_reporter = Loom::Pattern::ResultReporter.new(
+        @loom_config, pattern_ref.slug, fact_set.hostname, shell_session)
+      pattern_ref.call(shell.shell_api, fact_set)
       result_reporter.write_report
 
       unless shell_session.success?

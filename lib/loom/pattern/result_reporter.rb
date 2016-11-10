@@ -1,13 +1,15 @@
 module Loom::Pattern
   class ResultReporter
-    def initialize(loom_config, pattern_slug, host, shell_session)
+    def initialize(loom_config, pattern_slug, hostname, shell_session)
       @loom_config = loom_config
       @start = Time.now
       @delta_t = nil
-      @host = host
+      @hostname = hostname
       @pattern_slug = pattern_slug
       @shell_session = shell_session
     end
+
+    attr_reader :hostname
 
     def failure_summary
       return "scenario did not fail" if success?
@@ -32,7 +34,7 @@ module Loom::Pattern
 
     def scenario_string
       status = success? ? "OK" : "FAILED"
-      "#{@host.hostname} => #{@pattern_slug} [Result: #{status}] "
+      "#{hostname} => #{@pattern_slug} [Result: #{status}] "
     end
 
     def generate_report
