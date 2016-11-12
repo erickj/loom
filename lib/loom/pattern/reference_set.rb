@@ -80,7 +80,7 @@ module Loom::Pattern
 
       def refs_for_mod_spec(mod_spec)
         mod = mod_spec[:module]
-        hooks = mod.hooks
+        context = context_for_mod_spec mod_spec
         source = @source
 
         mod_spec[:pattern_methods].map do |m|
@@ -89,16 +89,28 @@ module Loom::Pattern
           slug = compute_slug mod_spec[:namespace_list], m
 
           Loom.log.warn "no descripiton for pattern => #{slug}" unless desc
-          Reference.new slug, method, source, hooks, desc
+          Reference.new slug, method, source, context, desc
         end
+      end
+
+      def context_for_mod_spec(mod_spec)
+        parents = mod_spec[:parent_modules].find_all do |mod|
+          is_pattern_module mod
+        end
+        parent_context = parents.reduce(nil) do |parent_ctx, parent_mod|
+          DefinitionContext.new parent_mod, parent_ctx
+        end
+
+        mod = mod_spec[:module]
+        DefinitionContext.new mod, parent_context
       end
 
       def compute_slug(namespace_list, pattern_method_name)
         namespace_list.dup.push(pattern_method_name).join ":"
       end
 
-      def mod_namespace_list(pattern, parent_context)
-        mods = parent_context << pattern
+      def mod_namespace_list(pattern, parent_modules)
+        mods = parent_modules.dup << pattern
         mods.reduce([]) do |memo, mod|
           mod_name = if mod.respond_to?(:namespace) && mod.namespace
                        mod.namespace
@@ -115,25 +127,30 @@ module Loom::Pattern
 
       def pattern_mod_specs
         pattern_mods = []
-        traverse_pattern_modules @shell_module do |pattern_mod, context|
+        traverse_pattern_modules @shell_module do |pattern_mod, parent_modules|
           Loom.log.debug2(self) { "found pattern module => #{pattern_mod}" }
           pattern_methods = pattern_mod.pattern_methods
 
           next if pattern_methods.empty?
           pattern_mods << {
-            :namespace_list => mod_namespace_list(pattern_mod, context),
+            :namespace_list => mod_namespace_list(pattern_mod, parent_modules),
             :pattern_methods => pattern_methods,
             :module => pattern_mod,
+            :parent_modules => parent_modules.dup
           }
         end
         pattern_mods
+      end
+
+      def is_pattern_module(mod)
+        mod.included_modules.include? Loom::Pattern
       end
 
       def traverse_pattern_modules(mod, pattern_parents=[], visited={}, &block)
         return if visited[mod.name] # prevent cycles
         visited[mod.name] = true
 
-        yield mod, pattern_parents.dup if mod.included_modules.include? Loom::Pattern
+        yield mod, pattern_parents.dup if is_pattern_module(mod)
 
         # Traverse all sub modules, even ones that aren't
         # Loom::Pattern[s], since they might contain more sub modules

@@ -29,6 +29,55 @@ end
 
 
 module Test
+
+  module Parent
+    include Loom::Pattern
+
+    with_facts :outer_fact => :outer, :replaced => :original
+
+    before do
+      puts "Test::Parent => before"
+    end
+
+    after do
+      puts "Test::Parent => after"
+    end
+
+    desc "Checks facts on a parent pattern"
+    pattern :check_facts do |loom, facts|
+      unless facts[:outer_fact] == :outer
+        raise "expected outer fact => #{facts[:outer_fact]}"
+      end
+    end
+
+    module Child
+      include Loom::Pattern
+
+      with_facts :inner_fact => :inner, :replaced => :override
+
+      before do
+        puts "Test::Parent::Child => before"
+      end
+
+      after do
+        puts "Test::Parent::Child => after"
+      end
+
+      desc "Checks inherited facts on a cihld pattern"
+      pattern :check_facts do |loom, facts|
+        unless facts[:inner_fact] == :inner
+          raise "expected inner fact => #{facts[:inner_fact]}"
+        end
+        unless facts[:outer_fact] == :outer
+          raise "expected outer fact => #{facts[:outer_fact]}"
+        end
+        unless facts[:replaced] == :override
+          raise "expected replaced fact => #{facts[:replaced_fact]}"
+        end
+      end
+    end
+  end
+
   module Shell
     include Loom::Pattern
 

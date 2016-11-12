@@ -3,17 +3,18 @@ module Loom::Pattern
 
     attr_reader :slug, :source_file, :desc
 
-    def initialize(slug, unbound_method, source_file, hooks, description)
+    def initialize(slug, unbound_method, source_file, definition_ctx, description)
       @slug = slug
       @unbound_method = unbound_method
       @source_file = source_file
-      @hooks = hooks
+      @definition_ctx = definition_ctx
       @desc = description
     end
 
-    def call(shell_api, fact_set)
-      run_context = RunContext.new @unbound_method, @hooks.dup
+    def call(shell_api, host_fact_set)
+      run_context = RunContext.new @unbound_method, @definition_ctx
 
+      fact_set = @definition_ctx.fact_set host_fact_set
       begin
         run_context.run shell_api, fact_set
       rescue
@@ -28,26 +29,27 @@ module Loom::Pattern
     # A small class to bind the unbound_method to and provide context
     # in the case of errors.
     class RunContext
-      def initialize(unbound_method, hooks)
+      def initialize(unbound_method, definition_ctx)
         @bound_method = unbound_method.bind self
-        @hooks = hooks
+        @definition_ctx = definition_ctx
       end
 
       def run(*args)
-        before_hooks = Hook.before_hooks @hooks
-        after_hooks = Hook.after_hooks @hooks
+        before_hooks = @definition_ctx.before_hooks
+        after_hooks = @definition_ctx.after_hooks
 
         begin
+          Loom.log.debug1(self) { "before hooks => #{before_hooks}"}
           before_hooks.each do |hook|
-            Loom.log.debug4(self) { "executing before hook => #{hook}"}
+            Loom.log.debug2(self) { "executing before hook => #{hook}"}
             self.instance_exec *args, &hook.block
           end
 
           apply_pattern *args
         ensure
-          Loom.log.debug3(self) { "after hooks => #{after_hooks}" }
+          Loom.log.debug1(self) { "after hooks => #{after_hooks}" }
           after_hooks.each do |hook|
-            Loom.log.debug4(self) { "executing after hook => #{hook}"}
+            Loom.log.debug2(self) { "executing after hook => #{hook}"}
             self.instance_exec *args, &hook.block
           end
         end

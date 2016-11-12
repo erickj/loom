@@ -53,13 +53,31 @@ module Loom::Facts
       validate_facts fact_map
 
       @fact_map = YAML.load(fact_map.to_yaml)
-      @hostname = host_spec.hostname
+      @host_spec = host_spec
     end
 
-    attr_reader :hostname
+    attr_reader :host_spec
+
+    def merge(facts)
+      facts = case facts
+              when FactSet
+                facts.facts
+              when Hash
+                facts
+              else
+                raise "unable to merge facts => #{facts.class}:#{facts}"
+              end
+      merged_facts = @fact_map.merge facts
+      FactSet.new @host_spec, merged_facts
+    end
+
+    def hostname
+      host_spec.hostname
+    end
 
     def get(fact_name)
-      @fact_map[fact_name.to_sym].dup rescue nil
+      result = @fact_map[fact_name.to_sym]
+      result.dup rescue result
     end
     alias_method :[], :get
 

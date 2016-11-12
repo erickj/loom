@@ -8,6 +8,11 @@ module Loom::Pattern
     end
     alias_method :desc, :description
 
+    def with_facts(**new_facts)
+      @facts ||= {}
+      @facts.merge! new_facts
+    end
+
     def pattern(name, &block)
       Loom.log.debug3(self) { "defined pattern method => #{name}" }
       @pattern_methods ||= []
@@ -52,6 +57,10 @@ module Loom::Pattern
 
     def hooks
       @hooks || []
+    end
+
+    def facts
+      @facts || {}
     end
   end
 end
