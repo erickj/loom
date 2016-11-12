@@ -1,8 +1,7 @@
 require "forwardable"
-require "loom/mods"
 require_relative "adapter"
 
-module Loom::CoreMods
+module LoomExt::CoreMods
   class Package < Loom::Mods::Module
 
     UnsupportedPackageManager = Class.new Loom::Mods::ModActionError

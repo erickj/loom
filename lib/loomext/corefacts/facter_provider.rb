@@ -1,4 +1,4 @@
-module Loom::CoreFacts
+module LoomExt::CoreFacts
   class FacterProvider < Loom::Facts::Provider
 
     Loom::Facts::Provider.register_factory(self) do |shell, loom_config|
@@ -19,6 +19,5 @@ module Loom::CoreFacts
       yaml_facts = @shell.capture "facter --yaml"
       YAML.load yaml_facts
     end
-
   end
 end

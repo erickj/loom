@@ -1,6 +1,4 @@
-require "loom/mods"
-
-module Loom::CoreMods
+module LoomExt::CoreMods
   class User < Loom::Mods::Module
 
     SudoersDNoExistError = Class.new Loom::Mods::ModActionError

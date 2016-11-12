@@ -1,6 +1,4 @@
-require "loom/mods"
-
-module Loom::CoreMods
+module LoomExt::CoreMods
   class Files < Loom::Mods::Module
 
     register_mod :files, :alias => :f

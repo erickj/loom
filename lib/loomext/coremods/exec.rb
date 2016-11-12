@@ -1,6 +1,4 @@
-require "loom/mods"
-
-module Loom::CoreMods
+module LoomExt::CoreMods
 
   ##
   # Executes shell commands from patterns. e.g.

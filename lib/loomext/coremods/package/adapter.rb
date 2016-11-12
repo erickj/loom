@@ -1,4 +1,4 @@
-module Loom::CoreMods
+module LoomExt::CoreMods
   class Package < Loom::Mods::Module
 
     class PkgAdapter

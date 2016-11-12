@@ -1,4 +1,4 @@
-require "./lib/coremods/all"
+require "loomext/all"
 
 desc "Reports `uptime` status"
 pattern :uptime do |loom, facts|
