@@ -100,7 +100,11 @@ module Loom::Pattern
       def mod_namespace_list(pattern, parent_context)
         mods = parent_context << pattern
         mods.reduce([]) do |memo, mod|
-          mod_name = mod.namespace.nil? ? mod.name.demodulize : mod.namespace
+          mod_name = if mod.respond_to?(:namespace) && mod.namespace
+                       mod.namespace
+                     else
+                       mod.name.demodulize rescue ''
+                     end
           if memo.size > 0 && mod_name.empty?
             raise InvalidPatternNamespace, "only the root can have an empty namespace"
           end

@@ -28,104 +28,106 @@ pattern :fail do |loom, facts|
 end
 
 
-module Shell
-  include Loom::Pattern
+module Test
+  module Shell
+    include Loom::Pattern
 
-  desc "Executes some commands in a subshell"
-  pattern :subshell do |loom, facts|
-    loom << "(echo $$; echo $BASHPID; whoami)"
-    loom << "(sudo -i -u root whoami)"
+    desc "Executes some commands in a subshell"
+    pattern :subshell do |loom, facts|
+      loom << "(echo $$; echo $BASHPID; whoami)"
+      loom << "(sudo -i -u root whoami)"
 
-    loom.local << "(echo $$; echo $BASHPID; whoami)"
-#    loom.local << "(sudo -i -u root whoami)"
+      loom.local << "(echo $$; echo $BASHPID; whoami)"
+      #    loom.local << "(sudo -i -u root whoami)"
+    end
+
+    desc "Tests a bunch of nested sudo scenarios"
+    pattern :sudo do |loom, facts|
+      loom.sudo "root" do
+        loom << "pwd"
+        loom << :whoami
+        loom << "touch loom.file"
+
+        loom.sudo do
+          loom << :whoami
+          loom << "pwd"
+          loom << "touch root.file"
+
+          loom.sudo :postgres do
+            loom << :whoami
+            loom << "cd /tmp; touch postgres.file"
+          end
+
+          loom << "touch root.file2"
+        end
+      end
+
+      loom.cd "/tmp" do
+        loom << :pwd
+        loom.sudo :root, :pwd do loom << :pwd end
+        loom << :pwd
+      end
+
+    end
   end
 
-  desc "Tests a bunch of nested sudo scenarios"
-  pattern :sudo do |loom, facts|
-    loom.sudo "root" do
-      loom << "pwd"
-      loom << :whoami
-      loom << "touch loom.file"
+  module User
+    include Loom::Pattern
 
+    desc "Adds a bunch of users and then removes them right away"
+    pattern :add_users do |loom, facts|
       loom.sudo do
-        loom << :whoami
-        loom << "pwd"
-        loom << "touch root.file"
+        loom.user.add :deploy, uid: 2000, home_dir: "/opt/deploy"
+        loom.user.add :nara, uid: 1001, home_dir: "/home/nara"
+        loom.user.add :marrian, home_dir: "/home/marrian"
 
-        loom.sudo :postgres do
-          loom << :whoami
-          loom << "cd /tmp; touch postgres.file"
-        end
+        loom.user.add_system_user :app, uid: 900
+        loom.user.add_system_user :batch
 
-        loom << "touch root.file2"
+        loom.user.remove :deploy
+        loom.user.remove :nara
+        loom.user.remove :marrian
+        loom.user.remove :app
+        loom.user.remove :batch
       end
     end
 
-    loom.cd "/tmp" do
-      loom << :pwd
-      loom.sudo :root, :pwd do loom << :pwd end
-      loom << :pwd
-    end
-
-  end
-end
-
-module User
-  include Loom::Pattern
-
-  desc "Adds a bunch of users and then removes them right away"
-  pattern :add_users do |loom, facts|
-    loom.sudo do
-      loom.user.add :deploy, uid: 2000, home_dir: "/opt/deploy"
-      loom.user.add :nara, uid: 1001, home_dir: "/home/nara"
-      loom.user.add :marrian, home_dir: "/home/marrian"
-
-      loom.user.add_system_user :app, uid: 900
-      loom.user.add_system_user :batch
-
-      loom.user.remove :deploy
-      loom.user.remove :nara
-      loom.user.remove :marrian
-      loom.user.remove :app
-      loom.user.remove :batch
+    desc "Makes the postgres user a sudoer"
+    pattern :sudoers do |loom, facts|
+      loom.sudo { loom.user.make_sudoer :postgres }
     end
   end
 
-  desc "Makes the postgres user a sudoer"
-  pattern :sudoers do |loom, facts|
-    loom.sudo { loom.user.make_sudoer :postgres }
-  end
-end
+  module Package
+    include Loom::Pattern
 
-module Package
-  include Loom::Pattern
+    namespace :pkg
 
-  namespace :pkg
-
-  before do |shell, facts|
-    puts "#{self} in before"
-  end
-
-  after do
-    puts "#{self} in after"
-  end
-
-  desc "Updates the default package manager cache"
-  pattern :update_cache do |loom, facts|
-    loom.sudo { loom.pkg.update_cache }
-  end
-
-  desc "Installs Apache HTTP server"
-  pattern :install_httpd do |loom, facts|
-    loom.sudo do
-      loom.pkg.install facts[:apache] unless loom.pkg.installed? facts[:apache]
+    before do |shell, facts|
+      puts "#{self} in before"
     end
-  end
 
-  desc "Installs Facter GEM"
-  pattern :install_facter do |loom, facts|
-    loom.sudo do
-      loom.pkg[:gem].ensure_installed :facter
+    after do
+      puts "#{self} in after"
+    end
+
+    desc "Updates the default package manager cache"
+    pattern :update_cache do |loom, facts|
+      loom.sudo { loom.pkg.update_cache }
+    end
+
+    desc "Installs Apache HTTP server"
+    pattern :install_httpd do |loom, facts|
+      loom.sudo do
+        loom.pkg.install facts[:apache] unless loom.pkg.installed? facts[:apache]
+      end
+    end
+
+    desc "Installs Facter GEM"
+    pattern :install_facter do |loom, facts|
+      loom.sudo do
+        loom.pkg[:gem].ensure_installed :facter
+      end
     end
   end
 end

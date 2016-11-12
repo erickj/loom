@@ -25,7 +25,7 @@ through SSH, loosely inspired by Python Fabric - http://www.fabfile.org/.
 Try `loom weave uptime -H localhost` to see an example.
 EOS
 
-      global_option "--[no-]verbose", "Enable verbose loom result reporting" do |v|
+      global_option "-V", "--verbose", "Report verbose results" do |v|
         Loom.configure do |c|
           c.run_verbose = v
         end
