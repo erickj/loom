@@ -50,7 +50,11 @@ module LoomExt::CoreMods
     module Actions
       extend Forwardable
       def_delegators :@pkg_adapter, :installed?, :install, :uninstall,
-      :update_cache, :upgrade
+      :update_cache, :upgrade, :ensure_installed
+
+      def [](*args)
+        get(*args)
+      end
     end
 
     import_actions Package::Actions

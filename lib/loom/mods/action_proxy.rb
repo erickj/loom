@@ -10,10 +10,6 @@ module Loom::Mods
       ns.nil? ? self : @nested_action_proxies[ns]
     end
 
-    def method_missing(name, *args)
-      @mod.send name, *args
-    end
-
     private
 
     class << self
