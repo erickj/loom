@@ -4,12 +4,8 @@ module Loom
   module Facts
     class << self
 
-      def fact_providers(loom_config)
-        FactFileProvider.create_providers(loom_config)
-      end
-
-      def fact_set(shell, host_spec, fact_providers)
-        FactSet.create_for_host shell, host_spec, fact_providers
+      def fact_set(host_spec, shell, loom_config)
+        FactSet.create_for_host host_spec, shell, loom_config
       end
 
     end

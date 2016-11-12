@@ -3,7 +3,21 @@ module Loom::Facts
   class Provider
     attr_reader :fact_map
 
-    def fact_map_for_host(shell, host_spec, &block)
+    class << self
+      def register_factory(klass, &block)
+        @provider_factories ||= []
+        @provider_factories << block
+        Loom.log.debug1(self) { "registered fact provider => #{klass}" }
+      end
+
+      def create_fact_providers(shell, loom_config)
+        @provider_factories.map do |block|
+          block.call(shell, loom_config)
+        end.flatten
+      end
+    end
+
+    def collect_facts
       raise 'not implemented'
     end
   end
@@ -15,17 +29,17 @@ module Loom::Facts
     UnmarshalableError = Class.new Loom::LoomError
 
     class << self
-      def create_for_host(shell, host_spec, fact_providers)
+      def create_for_host(host_spec, shell, loom_config)
         fact_map = {}
+        fact_providers = Provider.create_fact_providers(shell, loom_config)
         fact_providers.each do |provider|
-          Loom.log.debug1(self) { "loading fact provider => #{provider}" }
-
-          provider.fact_map_for_host(shell, host_spec).each do |k, v|
+          Loom.log.debug(self) { "loading facts from provider => #{provider}" }
+          provider.collect_facts.each do |k, v|
             k = k.to_sym
             if fact_map[k]
               Loom.log.warn "overriding fact => #{k}"
             end
-            Loom.log.debug "adding fact => #{k}=#{v.to_s}"
+            Loom.log.debug3(self) { "adding fact => #{k}=#{v.to_s}" }
             fact_map[k] = v
           end
         end

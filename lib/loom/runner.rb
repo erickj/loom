@@ -13,7 +13,6 @@ module Loom
       @result_reports = []
 
       # these are initialized in +load+
-      @fact_providers = nil
       @inventory_list = nil
       @active_hosts = nil
       @pattern_refs = nil
@@ -63,7 +62,6 @@ module Loom
     private
 
     def load
-      @fact_providers = Loom::Facts.fact_providers @loom_config
       @inventory_list =
         Loom::Inventory::InventoryList.active_inventory @loom_config
       @active_hosts = @inventory_list.hosts
@@ -93,7 +91,7 @@ module Loom
           # Each pattern execution needs its own shell and mod loader to
           # make sure context is reported correctly
           shell = Loom::Shell.new sshkit_backend, dry_run
-          fact_set = Loom::Facts.fact_set shell, host_spec, @fact_providers
+          fact_set = Loom::Facts.fact_set host_spec, shell, @loom_config
 
           execute_pattern pattern_ref, shell, fact_set
         end
