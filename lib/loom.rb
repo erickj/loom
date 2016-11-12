@@ -1,3 +1,5 @@
+require 'env/development'
+
 module Loom
 
   LoomError = Class.new ::StandardError

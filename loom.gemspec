@@ -34,4 +34,6 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'rake', '~> 11.3'
   s.add_development_dependency 'rspec', '~> 3.5'
   s.add_development_dependency 'guard-rspec', '~> 4.7'
+  s.add_development_dependency 'pry', '~> 0.10'
+  s.add_development_dependency 'pry-byebug'
 end
