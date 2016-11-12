@@ -10,7 +10,7 @@ end
 
 desc "Prints all known facts"
 pattern :facts do |loom, facts|
-  loom << "echo #{facts} 1>&2"
+  puts facts
 end
 
 desc "cd's to the /etc directory and runs `pwd`"

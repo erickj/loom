@@ -93,7 +93,7 @@ module Loom
           # Each pattern execution needs its own shell and mod loader to
           # make sure context is reported correctly
           shell = Loom::Shell.new sshkit_backend, dry_run
-          fact_set = Loom::Facts.fact_set host_spec, @fact_providers
+          fact_set = Loom::Facts.fact_set shell, host_spec, @fact_providers
 
           execute_pattern pattern_ref, shell, fact_set
         end

@@ -39,7 +39,7 @@ module Loom::Facts
       @fact_map = convert_file_paths paths
     end
 
-    def fact_map_for_host(host_spec, &block)
+    def fact_map_for_host(shell, host_spec, &block)
       @fact_map.dup
     end
 
