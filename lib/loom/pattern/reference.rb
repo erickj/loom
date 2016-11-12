@@ -3,10 +3,9 @@ module Loom::Pattern
 
     attr_reader :slug, :source_file
 
-    def initialize(slug, unbound_method, original_module_name, source_file, hooks)
+    def initialize(slug, unbound_method, source_file, hooks)
       @slug = slug
       @unbound_method = unbound_method
-      @original_module_name = original_module_name
       @source_file = source_file
       @hooks = hooks
     end
@@ -17,15 +16,12 @@ module Loom::Pattern
       begin
         run_context.run shell_api, fact_set
       rescue
-        Loom.log.error "error executing pattern => #{original_method_name}\n\t" + $!.message
+        Loom.log.error "error executing pattern => #{slug}\n\t" + $!.message
         raise
       end
     end
 
     private
-    def original_method_name
-      "%s+%s+" % [@original_module_name, @slug.split(":").last]
-    end
 
     ##
     # A small class to bind the unbound_method to and provide context

@@ -91,6 +91,8 @@ end
 module Package
   include Loom::Pattern
 
+  namespace :pkg
+
   before do |shell, facts|
     puts "#{self} in before"
   end

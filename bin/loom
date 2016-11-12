@@ -88,8 +88,7 @@ EOS
                  "Don't run the patterns, only connect and log the expected patterns"
         c.action do |patterns, options|
           if options.all
-            loader = Loom::Pattern::Loader.configure Loom.config
-            patterns = loader.loaded_patterns.map(&:slug)
+            patterns = Loom::Pattern::Loader.load(Loom.config).slugs
           end
 
           runner = Loom::Runner.new Loom.config, patterns
@@ -106,7 +105,6 @@ EOS
           puts "Loom mods are:"
           puts ""
 
-          loader = Loom::Pattern::Loader.configure Loom.config
           Loom::Mods::ModLoader.registered_mods.each do |name, aliases|
             puts aliases.join(", ")
             puts "\t#{name}"
@@ -120,8 +118,8 @@ EOS
 
         c.option "--print", "Only print the space separted pattern names."
         c.action do |patterns, options|
-          loader = Loom::Pattern::Loader.configure Loom.config
-          pattern_slugs = loader.loaded_patterns.map(&:slug)
+          pattern_loader = Loom::Pattern::Loader.load Loom.config
+          pattern_slugs = pattern_loader.slugs
           if options.print
             puts pattern_slugs.join " "
             return
@@ -132,7 +130,7 @@ EOS
 
           max_slug_len = pattern_slugs.map(&:size).reduce(0) { |*args| args.max }
           puts "\t" + "Pattern:".ljust(max_slug_len) + "\tSource:"
-          loader.loaded_patterns.each do |ref|
+          pattern_loader.patterns.each do |ref|
             puts "\t#{ref.slug.ljust(max_slug_len)}\t#{ref.source_file}"
           end
         end
@@ -152,7 +150,6 @@ EOS
           end
         end
       end
-      alias_command :f, :facts
 
       command :"config" do |c|
         c.syntax = "loom config [options]"

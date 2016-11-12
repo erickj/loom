@@ -1,8 +1,6 @@
 module Loom
   class Runner
 
-    UnknownPatternError = Class.new Loom::LoomError
-
     PatternExecutionError = Class.new Loom::LoomError
     FailFastExecutionError = Class.new PatternExecutionError
 
@@ -11,36 +9,44 @@ module Loom
     def initialize(loom_config, pattern_slugs=[])
       @pattern_slugs = pattern_slugs
       @loom_config = loom_config
-
-      @pattern_loader = Loom::Pattern::Loader.configure @loom_config
-      @inventory_list = Loom::Inventory::InventoryList.active_inventory @loom_config
       @fact_providers = Loom::Facts.fact_providers @loom_config
 
-      @pattern_execution_failures = []
+      @inventory_list =
+        Loom::Inventory::InventoryList.active_inventory @loom_config
+      @active_hosts = @inventory_list.hosts
+
+      pattern_loader = Loom::Pattern::Loader.load @loom_config
+      @pattern_refs = pattern_loader.patterns @pattern_slugs
+
+      @run_failures = []
       @result_reports = []
 
-      Loom.log.debug1(self) { "initialized runner with config => #{loom_config.dump}" }
+      Loom.log.debug1(self) do
+        "initialized runner with config => #{loom_config.dump}"
+      end
     end
 
     def run(dry_run)
       begin
-        if pattern_refs.empty?
+        if @pattern_refs.empty?
           Loom.log.warn "no patterns given, there's no work to do"
           return
         end
-        if active_hosts.empty?
+        if @active_hosts.empty?
           Loom.log.warn "no hosts in the active inventory"
           return
         end
 
-        pattern_slugs = pattern_refs.map &:slug
-        hostnames = active_hosts.map &:hostname
+        hostnames = @active_hosts.map(&:hostname)
         Loom.log.info do
-          "executing patterns #{pattern_slugs} across hosts #{hostnames}"
+          "executing patterns #{@pattern_slugs} across hosts #{hostnames}"
         end
 
-        run_internal pattern_refs, active_hosts, dry_run
+        run_internal dry_run
 
+        unless @run_failures.empty?
+          raise PatternExecutionError, @run_failures
+        end
       rescue PatternExecutionError => e
         Loom.log.error "error executing patterns => #{e}"
         Loom.log.debug e.backtrace.join "\n"
@@ -56,25 +62,14 @@ module Loom
     end
 
     private
-    def pattern_refs
-      @pattern_slugs.map do |slug|
-        ref = @pattern_loader[slug]
-        raise UnknownPatternError, slug unless ref
-        ref
-      end
-    end
 
-    def active_hosts
-      @inventory_list.hosts
-    end
-
-    def run_internal(pattern_refs, active_hosts, dry_run)
+    def run_internal(dry_run)
       # TODO: fix the bindings in the block below so we don't need
       # this alias
       inventory_list = @inventory_list
 
-      on_host active_hosts do |sshkit_backend, host_spec|
-        pattern_refs.each do |pattern_ref|
+      on_host @active_hosts do |sshkit_backend, host_spec|
+        @pattern_refs.each do |pattern_ref|
           slug = pattern_ref.slug
           hostname = host_spec.hostname
 
@@ -94,10 +89,6 @@ module Loom
           execute_pattern pattern_ref, shell, fact_set
         end
       end
-
-      unless @pattern_execution_failures.empty?
-        raise PatternExecutionError, @pattern_execution_failures
-      end
     end
 
     def execute_pattern(pattern_ref, shell, fact_set)
@@ -109,7 +100,7 @@ module Loom
       result_reporter.write_report
 
       unless shell_session.success?
-        @pattern_execution_failures << result_reporter.failure_summary
+        @run_failures << result_reporter.failure_summary
 
         failure_strategy = @loom_config.run_failure_strategy
         case failure_strategy.to_sym
