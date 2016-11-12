@@ -9,17 +9,14 @@ module Loom
     def initialize(loom_config, pattern_slugs=[])
       @pattern_slugs = pattern_slugs
       @loom_config = loom_config
-      @fact_providers = Loom::Facts.fact_providers @loom_config
-
-      @inventory_list =
-        Loom::Inventory::InventoryList.active_inventory @loom_config
-      @active_hosts = @inventory_list.hosts
-
-      pattern_loader = Loom::Pattern::Loader.load @loom_config
-      @pattern_refs = pattern_loader.patterns @pattern_slugs
-
       @run_failures = []
       @result_reports = []
+
+      # these are initialized in +load+
+      @fact_providers = nil
+      @inventory_list = nil
+      @active_hosts = nil
+      @pattern_refs = nil
 
       Loom.log.debug1(self) do
         "initialized runner with config => #{loom_config.dump}"
@@ -28,6 +25,8 @@ module Loom
 
     def run(dry_run)
       begin
+        load
+
         if @pattern_refs.empty?
           Loom.log.warn "no patterns given, there's no work to do"
           return
@@ -62,6 +61,16 @@ module Loom
     end
 
     private
+
+    def load
+      @fact_providers = Loom::Facts.fact_providers @loom_config
+      @inventory_list =
+        Loom::Inventory::InventoryList.active_inventory @loom_config
+      @active_hosts = @inventory_list.hosts
+
+      pattern_loader = Loom::Pattern::Loader.load @loom_config
+      @pattern_refs = pattern_loader.patterns @pattern_slugs
+    end
 
     def run_internal(dry_run)
       # TODO: fix the bindings in the block below so we don't need
