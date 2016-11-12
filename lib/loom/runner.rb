@@ -87,13 +87,18 @@ module Loom
             return
           end
 
+          Loom.log.debug "collecting facts for => #{pattern_description}"
+          # Collect facts for each pattern run on each host, this way
+          # if one pattern run updates would be facts, the next
+          # pattern will see the new fact.
+          fact_shell = Loom::Shell.new sshkit_backend, dry_run
+          fact_set = Loom::Facts.fact_set host_spec, fact_shell, @loom_config
+
           Loom.log.info "running pattern => #{pattern_description}"
           # Each pattern execution needs its own shell and mod loader to
           # make sure context is reported correctly
-          shell = Loom::Shell.new sshkit_backend, dry_run
-          fact_set = Loom::Facts.fact_set host_spec, shell, @loom_config
-
-          execute_pattern pattern_ref, shell, fact_set
+          pattern_shell = Loom::Shell.new sshkit_backend, dry_run
+          execute_pattern pattern_ref, pattern_shell, fact_set
         end
       end
     end

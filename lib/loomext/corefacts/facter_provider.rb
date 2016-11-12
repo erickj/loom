@@ -12,7 +12,7 @@ module LoomExt::CoreFacts
 
     def collect_facts
       unless @has_facter
-        Loom::Log.warn "facter not installed"
+        Loom.log.warn "facter not installed"
         return {}
       end
 
