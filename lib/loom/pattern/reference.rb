@@ -1,13 +1,14 @@
 module Loom::Pattern
   class Reference
 
-    attr_reader :slug, :source_file
+    attr_reader :slug, :source_file, :desc
 
-    def initialize(slug, unbound_method, source_file, hooks)
+    def initialize(slug, unbound_method, source_file, hooks, description)
       @slug = slug
       @unbound_method = unbound_method
       @source_file = source_file
       @hooks = hooks
+      @desc = description
     end
 
     def call(shell_api, fact_set)

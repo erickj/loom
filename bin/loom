@@ -129,9 +129,8 @@ EOS
           puts ""
 
           max_slug_len = pattern_slugs.map(&:size).reduce(0) { |*args| args.max }
-          puts "\t" + "Pattern:".ljust(max_slug_len) + "\tSource:"
           pattern_loader.patterns.each do |ref|
-            puts "\t#{ref.slug.ljust(max_slug_len)}\t#{ref.source_file}"
+            puts "\t#{ref.slug.ljust(max_slug_len)}\t#{ref.desc}"
           end
         end
       end

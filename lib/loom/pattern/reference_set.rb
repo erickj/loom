@@ -85,9 +85,11 @@ module Loom::Pattern
 
         mod_spec[:pattern_methods].map do |m|
           method = mod.pattern_method m
+          desc = mod.pattern_description m
           slug = compute_slug mod_spec[:namespace_list], m
 
-          Reference.new slug, method, source, hooks
+          Loom.log.warn "no descripiton for pattern => #{slug}" unless desc
+          Reference.new slug, method, source, hooks, desc
         end
       end
 
