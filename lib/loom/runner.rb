@@ -46,9 +46,10 @@ module Loom
           raise PatternExecutionError, @run_failures
         end
       rescue PatternExecutionError => e
-        Loom.log.error "error executing patterns => #{e}"
+        num_patterns_failed = @run_failures.size
+        Loom.log.error "error executing #{num_patterns_failed} patterns => #{e}"
         Loom.log.debug e.backtrace.join "\n"
-        exit 1
+        exit 100 + num_patterns_failed
       rescue Loom::LoomError => e
         Loom.log.error "loom error => #{e.inspect}"
         exit 2
