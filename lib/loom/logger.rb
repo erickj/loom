@@ -41,14 +41,16 @@ module Loom
       private
       def configure_device(device_value)
         case device_value
-        when :stderr
+        when :stderr, 'stderr'
           STDERR
-        when :stdout
+        when :stdout, 'stdout'
           STDOUT
+        when :devnull, 'devnull'
+          File.new '/dev/null', 'a'
         when Integer
           IO.new device_value, 'a'
         when String
-          File.new device_value 'a'
+          File.new device_value, 'a'
         else
           raise ConfigError, "log_device => #{device_value}"
         end
