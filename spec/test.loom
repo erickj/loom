@@ -152,7 +152,7 @@ module Test
 
     namespace :pkg
 
-    before do |shell, facts|
+    before do |loom, facts|
       puts "#{self} in before"
     end
 
@@ -168,7 +168,7 @@ module Test
     desc "Installs Apache HTTP server"
     pattern :install_httpd do |loom, facts|
       loom.sudo do
-        loom.pkg.install facts[:apache] unless loom.pkg.installed? facts[:apache]
+        loom.pkg.install 'apache2' unless loom.pkg.installed? 'apache2'
       end
     end
 
