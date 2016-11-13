@@ -81,7 +81,7 @@ module LoomExt::CoreMods
     class DnfAdapter < RpmAdapter
 
       def install(pkg_name)
-        shell.exec :dnf, "install #{package}"
+        shell.exec :dnf, "install #{pkg_name}"
       end
 
       def uninstall(pkg_name)
