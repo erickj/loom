@@ -91,7 +91,7 @@ module LoomExt::CoreMods
 
         for_paths *paths do |p|
           shell.verify "[ -f #{p} ]"
-          shell.exec :echo, "-e '#{text}' >> #{p}"
+          shell.exec "/bin/echo -e '#{text}' >> #{p}"
         end
       end
 
@@ -99,7 +99,7 @@ module LoomExt::CoreMods
         text.gsub! "\n", "\\n"
 
         for_paths *paths do |p|
-          shell.exec "echo -e '#{text}' | tee #{p}"
+          shell.exec "/bin/echo -e '#{text}' | tee #{p}"
         end
       end
 
