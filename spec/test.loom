@@ -20,15 +20,70 @@ pattern :cd do |loom, facts|
   end
 end
 
-desc "Always fails with an error message."
-pattern :fail do |loom, facts|
-  unless loom << :false
-    loom << "echo i am false"
+module Exec
+  include Loom::Pattern
+
+  desc "Tests a condition."
+  pattern :test do |loom, facts|
+    unless loom.test :false
+      loom << "echo i tested false"
+    end
+
+    if loom.test :true
+      loom << "echo i tested true"
+    end
+
+    if loom.test :which, "bash"
+      loom << "echo has bash"
+    end
+  end
+
+  desc "Tests a match condition."
+  pattern :match do |loom, facts|
+    unless loom.files("/etc/hosts").match? :pattern => "aldsfja;ldjf"
+      loom << "echo i should not match garbage"
+    end
+
+    unless loom.files("/etc/hosts").match? :pattern => "localhost"
+      loom << "echo i should match localhost"
+    end
+  end
+
+  desc "Always fails due to return code."
+  pattern :fail_soft do |loom, facts|
+    unless loom << :false
+      loom << "echo i am false"
+    end
+  end
+
+  desc "Always fails due to a hard failure"
+  pattern :fail_hard do |loom, facts|
+    loom.fail "Fail big or not at all"
   end
 end
 
-
 module Test
+
+  module Files
+    include Loom::Pattern
+
+    desc "Reads a file"
+    pattern :read do |loom, facts|
+      loom.files("/etc/hosts").cat
+    end
+
+    desc "Gsubs file text"
+    pattern :gsub do |loom, facts|
+      loom.files("/tmp/garbage").write :text => <<EOS
+This is a bunch of junk
+192.123.456.0\t\thostname.xyz
+EOS
+      loom.files("/tmp/garbage")
+        .cat
+        .gsub(pattern: /[\d]{3}/, replace: "xxx")
+        .cat
+    end
+  end
 
   module Parent
     include Loom::Pattern

@@ -25,6 +25,7 @@ module LoomExt::CoreMods
           shell.execute action, cmd
         end
       end
+      self
     end
 
     ##
@@ -40,11 +41,40 @@ module LoomExt::CoreMods
 
     module Actions
 
+      def cat(*paths)
+        for_paths *paths do |p|
+          shell.capture "cat #{p}"
+        end
+      end
+
+      def rm(*paths)
+        for_paths *paths do |p|
+          shell.capture "rm -f #{p}"
+        end
+      end
+
+      def match?(*paths, pattern: /./)
+        all = true
+        for_paths *paths do |p|
+          file = shell.capture "cat #{p}"
+          all &&= file.match pattern
+        end
+        all
+      end
+
+      def gsub(*paths, pattern: nil, replace: nil, &block)
+        for_paths *paths do |p|
+          file = shell.capture "cat #{p}"
+          file.gsub!(pattern, replace, &block) unless pattern.nil?
+          write p, :text => file
+        end
+      end
+
       def chown(*paths, user: nil, group: nil, **opts)
         group_arg = group && ":" + group
 
         for_paths *paths do |p|
-          _.chown [user, group_arg].compact.join, p
+          shell.exec :chown, [user, group_arg].compact.join, p
         end
       end
 
@@ -56,23 +86,20 @@ module LoomExt::CoreMods
         for_paths *paths, :action => :mkdir, :flags => flags
       end
 
-      def append(*paths, text:)
+      def append(*paths, text: "")
+        text.gsub! "\n", "\\n"
+
         for_paths *paths do |p|
-          _.verify "[ -f #{p} ]"
-          _.echo "\"#{text}\" >> #{p}"
+          shell.verify "[ -f #{p} ]"
+          shell.exec :echo, "-e '#{text}' >> #{p}"
         end
       end
 
-      def write(*paths, text:)
-        for_paths *paths do |p|
-          _.verify "[ ! -f \"#{p}\" ]"
-          write! p, :text => text
-        end
-      end
+      def write(*paths, text: "")
+        text.gsub! "\n", "\\n"
 
-      def write!(*paths, text:)
         for_paths *paths do |p|
-          _.echo "\"#{text}\" > #{p}"
+          shell.exec :echo, "-e '#{text}' > #{p}"
         end
       end
 
