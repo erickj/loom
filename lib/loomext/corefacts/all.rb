@@ -1,4 +1,7 @@
-LoomExt::CoreFacts = Module.new
+module LoomExt
+  module CoreFacts
+  end
+end
 
 require "loom"
 

@@ -128,14 +128,12 @@ module Test
     desc "Adds a bunch of users and then removes them right away"
     pattern :add_users do |loom, facts|
       loom.sudo do
-        loom.user.add :deploy, uid: 2000, home_dir: "/opt/deploy"
         loom.user.add :nara, uid: 1001, home_dir: "/home/nara"
         loom.user.add :marrian, home_dir: "/home/marrian"
 
         loom.user.add_system_user :app, uid: 900
         loom.user.add_system_user :batch
 
-        loom.user.remove :deploy
         loom.user.remove :nara
         loom.user.remove :marrian
         loom.user.remove :app
@@ -145,9 +143,11 @@ module Test
 
     desc "Makes the postgres user a sudoer"
     pattern :sudoers do |loom, facts|
-      loom.user.add_system_user :postgres, uid: 999
-      loom.sudo { loom.user.make_sudoer :postgres }
-      loom.user.remove :postgres
+      loom.sudo do
+        loom.user.add_system_user :postgres, uid: 999
+        loom.user.make_sudoer :postgres
+        loom.user.remove :postgres
+      end
     end
   end
 

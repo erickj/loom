@@ -21,7 +21,7 @@ module Loom::Facts
       "facts/**/*"
     ]
 
-    Provider.register_factory(self) do |shell, loom_config|
+    Provider.register_factory(self) do |host_spec, shell, loom_config|
       providers = []
 
       yaml_paths = loom_config.files.find YAML_FILE_GLOBS

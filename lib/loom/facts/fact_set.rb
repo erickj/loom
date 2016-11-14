@@ -4,19 +4,37 @@ module Loom::Facts
     attr_reader :fact_map
 
     class << self
+      def disable_for_host(host_spec, klass)
+        @disabled_providers ||= {}
+        @disabled_providers[host_spec.hostname] ||= []
+        @disabled_providers[host_spec.hostname] << klass
+      end
+
+      def disabled_for_host?(host_spec, klass)
+        @disabled_providers ||= {}
+        @disabled_providers[host_spec.hostname] ||= []
+        @disabled_providers[host_spec.hostname].include? klass
+      end
+
       def register_factory(klass, &block)
         @provider_factories ||= []
         @provider_factories << block
         Loom.log.debug1(self) { "registered fact provider => #{klass}" }
       end
 
-      def create_fact_providers(shell, loom_config)
+      def create_fact_providers(host_spec, shell, loom_config)
         @provider_factories.map do |block|
-          block.call(shell, loom_config)
+          block.call(host_spec, shell, loom_config)
         end.flatten
       end
     end
 
+    def disable(host_spec)
+      Loom.log.warn "disabling fact provider => #{self}"
+      Provider.disable_for_host host_spec, self.class
+    end
+
+    # Should return a Hash
     def collect_facts
       raise 'not implemented'
     end
@@ -31,8 +49,10 @@ module Loom::Facts
     class << self
       def create_for_host(host_spec, shell, loom_config)
         fact_map = {}
-        fact_providers = Provider.create_fact_providers(shell, loom_config)
+        fact_providers = Provider.create_fact_providers(host_spec, shell, loom_config)
         fact_providers.each do |provider|
+          next if Provider.disabled_for_host?(host_spec, provider.class)
+
           Loom.log.debug(self) { "loading facts from provider => #{provider}" }
           provider.collect_facts.each do |k, v|
             k = k.to_sym
