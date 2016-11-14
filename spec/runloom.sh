@@ -1,8 +1,8 @@
 #!/bin/sh
-bin/loom weave fail -t \
+bin/loom weave uptime facts cd fail test:parent:check_facts test:parent:child:check_facts test:shell:subshell test:shell:sudo test:user:add_users test:user:sudoers test:pkg:update_cache test:pkg:install_httpd test:pkg:install_facter -t \
 	 -l spec/test.loom \
 	 -X log_level=info \
-	 -H vm-ubuntu-db \
+	 -H vm0.local \
 	 -X sshkit_log_level=debug \
 	 -X log_device=stderr \
 	 -X run_failure_strategy=cowboy 1>&2 < /dev/null
