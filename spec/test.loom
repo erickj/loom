@@ -62,7 +62,7 @@ module Exec
   end
 
   desc "Check timeout commands"
-  pattern :timeout do |loom, facts|
+  pattern :timeout_fail do |loom, facts|
     loom.timeout(:timeout => 1) do
       loom << "sleep 2"
     end
@@ -92,18 +92,11 @@ module Net
     end
     raise "should have local net" unless has_local_net
 
-    begin
-      loom.net(:timeout => 2, :check_host => '1.1.1.1').with_net do
-        raise "definitely not expected"
-      end
-    rescue Loom::ExecutionError => expected
-    end
+  end
 
-
-    begin
-      loom.net(:timeout => 2, :check_host => '1.1.1.1').check_net
-    rescue Loom::ExecutionError => expected
-    end
+  desc "expected check_net failures"
+  pattern :check_net_fail do |loom, facts|
+    loom.net(:timeout => 2, :check_host => '1.1.1.1').check_net
   end
 end
 

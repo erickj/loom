@@ -15,8 +15,13 @@ bin/loom weave ${all_patterns} \
 	 -X run_failure_strategy=cowboy
 rc=$?
 
-# expect exit code 102 (100 for patterns execution error + 2 failed pattern)
-if [ "${rc}" = "102" ]; then
+# expect exit code 104 (100 for patterns execution error + # expected failures):
+# exec:fail_soft
+# exec:fail_hard
+# exec:timeout_fail
+# net:check_net_fail
+
+if [ "${rc}" = "104" ]; then
     # runall.sh exits succesfully on this failure because we expect
     # the "fail" patterns to fail
     exit 0
