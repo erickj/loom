@@ -24,6 +24,7 @@ rc=$?
 if [ "${rc}" = "104" ]; then
     # runall.sh exits succesfully on this failure because we expect
     # the "fail" patterns to fail
+    echo "success with exit code ${rc}"
     exit 0
 else
     echo "failed with exit code ${rc}"

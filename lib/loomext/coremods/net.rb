@@ -15,7 +15,7 @@ module LoomExt::CoreMods
 
       def has_net?
         shell.mods.timeout :timeout => @net_timeout do
-          shell.exec "ping -c 1 #{@check_host}"
+          shell.exec "sh -c \"while !  ping -c1 #{@check_host}; do true; done\""
         end
       end
 
