@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    loom (0.0.1)
+    loom-core (0.0.1)
       bcrypt_pbkdf (= 1.0.0.alpha1)
       commander (~> 4.4)
       net-ssh (>= 3)
@@ -89,7 +89,7 @@ PLATFORMS
 DEPENDENCIES
   bundler (~> 1.13)
   guard-rspec (~> 4.7)
-  loom!
+  loom-core!
   pry (~> 0.10)
   pry-byebug
   rake (~> 11.3)
