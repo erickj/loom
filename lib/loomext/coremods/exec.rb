@@ -22,6 +22,20 @@ module LoomExt::CoreMods
     end
   end
 
+  class Timeout < Loom::Mods::Module
+    register_mod :timeout do |mod, timeout: 60, &block|
+      Loom.log.debug2(self) { "mod timeout => timeout #{timeout}" }
+      mod.shell.wrap("timeout #{timeout}", :should_quote => false, &block)
+    end
+  end
+
+  class Time < Loom::Mods::Module
+    register_mod :time do |mod, &block|
+      Loom.log.debug2(self) { "mod time" }
+      mod.shell.wrap("time", :should_quote => false, &block)
+    end
+  end
+
   class Sudo < Loom::Mods::Module
     register_mod :sudo do |mod, *args, &block|
       Loom.log.debug2(self) { "mod sudo => #{args} #{block}" }

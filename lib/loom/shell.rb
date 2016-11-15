@@ -14,6 +14,7 @@ module Loom
 
       @sshkit_backend = sshkit_backend
 
+      @cmd_wrappers = []
       @sudo_users = []
       @sudo_dir = nil
     end
@@ -47,6 +48,16 @@ module Loom
 
     def verify_which(command)
       verify :which, command
+    end
+
+    def wrap(wrapper, should_quote: true, &block)
+      @cmd_wrappers <<  CmdWrapperSpec.new(wrapper, should_quote)
+
+      begin
+        yield if block_given?
+      ensure
+        @cmd_wrappers.pop
+      end
     end
 
     def sudo(user=nil, *args, &block)
@@ -103,15 +114,44 @@ module Loom
     end
     alias_method :exec, :execute
 
+    private
     def create_command(*args)
       cmd = args.flatten.map(&:to_s).join " "
+
+      cmd = @cmd_wrappers.reduce(cmd) do |cmd, wrapper|
+        wrapper.wrap cmd
+      end
+
+      # sudo could also probably be implemented as a CmdWrapperSpec,
+      # but it's not worth the hack.
       cmd = @sudo_users.reverse.reduce(cmd) do |cmd, sudo_user|
-        quote_escaped_cmd = cmd.gsub('"', '\"').gsub('\\"', '\"')
+        quote_escaped_cmd = CmdWrapperSpec.quote_escape_cmd cmd
         "sudo -u #{sudo_user} -- /bin/sh -c \"#{quote_escaped_cmd}\""
       end
 
       cmd = "cd #{@sudo_dir};" << cmd if @sudo_dir
       cmd
+    end
+
+    class CmdWrapperSpec
+      class << self
+        def quote_escape_cmd(cmd)
+          cmd.gsub('"', '\"').gsub('\\"', '\"')
+        end
+      end
+
+      def initialize(wrapper_cmd, should_quote)
+        @wrapper_cmd = wrapper_cmd
+        @should_quote = should_quote
+      end
+
+      def wrap(cmd)
+        if @should_quote
+          cmd = CmdWrapperSpec.quote_escape_cmd cmd
+        end
+        cmd = "%s %s" % [@wrapper_cmd, cmd]
+        cmd
+      end
     end
   end
 

@@ -60,6 +60,21 @@ module Exec
   pattern :fail_hard do |loom, facts|
     loom.fail "Fail big or not at all"
   end
+
+  desc "Check timeout commands"
+  pattern :timeout do |loom, facts|
+    loom.timeout(:timeout => 1) do
+      loom << "sleep 2"
+    end
+  end
+
+  desc "Wrapped time commands"
+  pattern :time do |loom, facts|
+    loom.time do
+      loom << "echo hi"
+      loom << "sleep 2"
+    end
+  end
 end
 
 module Net
