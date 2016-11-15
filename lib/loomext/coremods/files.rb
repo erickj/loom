@@ -1,7 +1,7 @@
 module LoomExt::CoreMods
   class Files < Loom::Mods::Module
 
-    register_mod :files, :alias => :f
+    register_mod :files
 
     def initialize(shell, paths=nil)
       super(shell)

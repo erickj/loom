@@ -72,7 +72,10 @@ module Loom::Facts
       raise unless fact_map.is_a? Hash
       validate_facts fact_map
 
-      @fact_map = YAML.load(fact_map.to_yaml)
+      @fact_map = YAML.load(fact_map.to_yaml).reduce({}) do |memo, tuple|
+        memo[tuple.first.to_sym] = tuple.last
+        memo
+      end
       @host_spec = host_spec
     end
 

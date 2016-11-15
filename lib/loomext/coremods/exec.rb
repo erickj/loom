@@ -1,6 +1,6 @@
 module LoomExt::CoreMods
 
-  FailError = Class.new Loom::LoomError
+  FailError = Class.new Loom::ExecutionError
 
   ##
   # Executes shell commands from patterns. e.g.

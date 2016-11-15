@@ -109,7 +109,14 @@ module Loom
       hostname = fact_set.hostname
       result_reporter = Loom::Pattern::ResultReporter.new(
         @loom_config, pattern_ref.slug, hostname, shell_session)
-      pattern_ref.call(shell.shell_api, fact_set)
+
+      begin
+        pattern_ref.call(shell.shell_api, fact_set)
+      rescue Loom::ExecutionError => e
+        Loom.log.warn "execution error => #{e}"
+        @run_failures << e.message
+      end
+
       result_reporter.write_report
 
       unless shell_session.success?

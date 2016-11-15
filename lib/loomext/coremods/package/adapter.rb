@@ -54,7 +54,7 @@ module LoomExt::CoreMods
     class AptAdapter < DpkgAdapter
 
       def install(pkg_name)
-        shell.exec :echo, "apt-get install #{pkg_name}"
+        shell.mods.net.with_net { shell.exec :echo, "apt-get install #{pkg_name}" }
       end
 
       def uninstall(pkg_name)
@@ -62,7 +62,7 @@ module LoomExt::CoreMods
       end
 
       def update_cache
-        shell.exec :apt, "update"
+        shell.mods.net.with_net { shell.exec :apt, "update" }
       end
 
       def upgrade(pkg_name)
@@ -81,7 +81,7 @@ module LoomExt::CoreMods
     class DnfAdapter < RpmAdapter
 
       def install(pkg_name)
-        shell.exec :dnf, "install #{pkg_name}"
+        shell.mods.net.with_net { shell.exec :dnf, "install #{pkg_name}" }
       end
 
       def uninstall(pkg_name)
@@ -89,7 +89,7 @@ module LoomExt::CoreMods
       end
 
       def update_cache
-        shell.exec :dnf, "updateinfo"
+        shell.mods.net.with_net { shell.exec :dnf, "updateinfo" }
       end
 
       def upgrade(pkg_name)

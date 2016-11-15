@@ -19,6 +19,7 @@ module Loom
     end
 
     attr_reader :session, :mod_loader, :shell_api
+    alias_method :mods, :mod_loader
 
     def local
       @local ||= LocalShell.new @session, @dry_run

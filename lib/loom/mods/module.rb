@@ -11,6 +11,10 @@ module Loom::Mods
       @action_proxy = self.class.action_proxy self
     end
 
+    def mods
+      @shell.mod_loader
+    end
+
     class << self
 
       def register_mod(name, **opts, &block)

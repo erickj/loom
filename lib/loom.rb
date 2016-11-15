@@ -3,6 +3,7 @@ require 'env/development'
 module Loom
 
   LoomError = Class.new ::StandardError
+  ExecutionError = Class.new LoomError
 
   class << self
     def configure(&block)
