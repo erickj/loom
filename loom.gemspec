@@ -2,7 +2,7 @@ $LOAD_PATH.push File.expand_path '../lib/', __FILE__
 require 'loom/version'
 
 Gem::Specification.new do |s|
-  s.name = 'loom'
+  s.name = 'loom-core'
   s.description = 'Repeatable management of remote hosts over SSH'
   s.summary = s.description
   s.version = Loom::VERSION
