@@ -66,7 +66,7 @@ module LoomExt::CoreMods
       end
 
       def upgrade(pkg_name)
-        raise 'not implemented'
+        shell.mods.net.with_net { shell.exec :apt, "upgrade" }
       end
     end
 
