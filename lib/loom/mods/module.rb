@@ -1,24 +1,68 @@
 module Loom::Mods
 
   ModActionError = Class.new Loom::LoomError
+  InvalidModActionSignature = Class.new Loom::LoomError
 
   class Module
-    attr_accessor :shell, :action_proxy, :exec_args
+    attr_accessor :shell, :loom_config, :loom, :mods, :action_proxy
 
-    def initialize(shell, *args)
+    def initialize(shell, loom_config)
+      unless shell && shell.is_a?(Loom::Shell)
+        raise "missing shell for mod #{self} => #{shell}"
+      end
+      unless loom_config && loom_config.is_a?(Loom::Config)
+        raise "missing config for mod #{self} => #{loom_config}"
+      end
+
       @shell = shell
-      @exec_args = args
-      @action_proxy = self.class.action_proxy self
+      @loom = shell.shell_api
+      @mods = shell.mod_loader
+      @loom_config = loom_config
+
+      # The action proxy is a facade for the mod provided to patterns by the
+      # ShellApi (the 'loom' object). The ShellApi calls back to the mod_loader
+      # on method missing which instantiates a new Module object and returns the
+      # action_proxy.
+      @action_proxy = self.class.action_proxy self, shell.shell_api
+      @action_args = nil
+      @action_block = nil
     end
 
-    def mods
-      @shell.mod_loader
+    def init_action(*args, &pattern_block)
+      @action_args = args
+      @action_block = pattern_block
+    end
+
+    def execute(*args, &pattern_block)
+      if respond_to? :mod_block
+        Loom.log.debug3(self) { "executing mod block => #{args} #{pattern_block}" }
+        mod_block *args, &pattern_block
+      else
+        Loom.log.debug3(self) { "initing action => #{args}" }
+        init_action *args, &pattern_block
+        action_proxy
+      end
     end
 
     class << self
 
       def register_mod(name, **opts, &block)
-        ModLoader.register_mod self, name, **opts, &block
+        Loom.log.debug2(self) { "registered mod => #{name}" }
+
+        if block_given?
+          Loom.log.debug2(self) { "acting as mod_block => #{name}:#{block}" }
+          define_method :mod_block, &block
+        end
+
+        # TODO: Currently registering a block for a mod is different than
+        # importing actions because of how the mod gets executed. When actions
+        # are imorted, the mod is treated as an object providing access to the
+        # actions (via the action_proxy), the action proxy is provided to the
+        # calling pattern via {#execute}. When a block is registered, then the
+        # mod is only a sinlge method executed immediately via #{execute}. The
+        # method signature for the block and action proxy method are the
+        # same... this should be simplified.
+        ModLoader.register_mod self, name, **opts
       end
 
       def required_commands(*cmds)
@@ -52,11 +96,11 @@ module Loom::Mods
 
       ##
       # This needs more thought
-      def action_proxy(mod)
+      def action_proxy(mod, shell_api)
         @action_proxy_klasses ||= {}
         @action_proxy_klasses[mod.class.hash] ||=
           ActionProxy.subclass_for_action_map action_map
-        @action_proxy_klasses[mod.class.hash].new mod
+        @action_proxy_klasses[mod.class.hash].new mod, shell_api
       end
 
       private

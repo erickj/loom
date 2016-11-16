@@ -5,8 +5,7 @@ module LoomExt::CoreMods
 
     register_mod :net
 
-    def initialize(shell, timeout: 10, check_host: "8.8.8.8")
-      super shell
+    def init_action(timeout: 10, check_host: "8.8.8.8")
       @net_timeout = timeout
       @check_host = check_host
     end
@@ -14,8 +13,8 @@ module LoomExt::CoreMods
     module Actions
 
       def has_net?
-        shell.mods.timeout :timeout => @net_timeout do
-          shell.exec "sh -c \"while !  ping -c1 #{@check_host}; do true; done\""
+        loom.timeout :timeout => @net_timeout do
+          loom << "sh -c \"while !  ping -c1 #{@check_host}; do true; done\""
         end
       end
 

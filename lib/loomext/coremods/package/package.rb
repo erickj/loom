@@ -10,38 +10,37 @@ module LoomExt::CoreMods
 
     register_mod :pkg
 
-    def initialize(shell)
-      super shell
-      @pkg_adapter = install_adapter
+    def init_action
+      @pkg_adapter = default_adapter
     end
 
     def get(adapter)
       case adapter.to_sym
       when :dnf
-        DnfAdapter.new shell
+        DnfAdapter.new loom
       when :rpm
-        RpmAdapter.new shell
+        RpmAdapter.new loom
       when :apt
-        AptAdapter.new shell
+        AptAdapter.new loom
       when :dpkg
-        DpkgAdapter.new shell
+        DpkgAdapter.new loom
       when :gem
-        GemAdapter.new shell
+        GemAdapter.new loom
       else
         raise UnsupportedPackageManager, adapter
       end
     end
     alias_method :[], :get
 
-    def install_adapter
-      if shell.test :which, "dnf"
-        DnfAdapter.new shell
-      elsif shell.test :which, "rpm"
-        RpmAdapter.new shell
-      elsif shell.test :which, "apt"
-        AptAdapter.new shell
-      elsif shell.test :which, "dpkg"
-        DpkgAdapter.new shell
+    def default_adapter
+      if loom.test :which, "dnf"
+        DnfAdapter.new loom
+      elsif loom.test :which, "rpm"
+        RpmAdapter.new loom
+      elsif loom.test :which, "apt"
+        AptAdapter.new loom
+      elsif loom.test :which, "dpkg"
+        DpkgAdapter.new loom
       else
         raise UnsupportedPackageManager
       end

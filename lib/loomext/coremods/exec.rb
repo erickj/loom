@@ -9,49 +9,43 @@ module LoomExt::CoreMods
   # loom.x.cd
   #
   class Exec < Loom::Mods::Module
-    register_mod :exec, :alias => :<< do |mod, *args|
-      Loom.log.debug2(self) { "mod exec => #{mod}:#{args}" }
-      mod.shell.execute *args
+    register_mod :exec, :alias => :<< do |*cmd|
+      shell.execute *cmd
     end
   end
 
   class ChangeDirectory < Loom::Mods::Module
-    register_mod :change_directory, :alias => :cd do |mod, path, &block|
-      Loom.log.debug2(self) { "mod cd => #{path} #{block}" }
-      mod.shell.cd path, &block
+    register_mod :change_directory, :alias => :cd do |path, &block|
+      shell.cd path, &block
     end
   end
 
   class Timeout < Loom::Mods::Module
-    register_mod :timeout do |mod, timeout: 60, &block|
-      Loom.log.debug2(self) { "mod timeout => timeout #{timeout}" }
-      mod.shell.wrap("timeout #{timeout}", :should_quote => false, &block)
+    register_mod :timeout do |timeout: 60, &block|
+      shell.wrap("timeout #{timeout}", :should_quote => false, &block)
     end
   end
 
   class Time < Loom::Mods::Module
-    register_mod :time do |mod, &block|
-      Loom.log.debug2(self) { "mod time" }
-      mod.shell.wrap("time", :should_quote => false, &block)
+    register_mod :time do |&block|
+      shell.wrap("time", :should_quote => false, &block)
     end
   end
 
   class Sudo < Loom::Mods::Module
-    register_mod :sudo do |mod, *args, &block|
-      Loom.log.debug2(self) { "mod sudo => #{args} #{block}" }
-      mod.shell.sudo *args, &block
+    register_mod :sudo do |user: nil, cmd: nil, &block|
+      shell.sudo user, cmd, &block
     end
   end
 
   class Test < Loom::Mods::Module
-    register_mod :test do |mod, *args, &block|
-      Loom.log.debug2(self) { "mod test => #{args} #{block}" }
-      mod.shell.test *args, &block
+    register_mod :test do |*cmd|
+      shell.test *cmd
     end
   end
 
   class Fail < Loom::Mods::Module
-    register_mod :fail do |mod, message|
+    register_mod :fail do |message=nil|
       raise FailError, message
     end
   end

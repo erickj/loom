@@ -3,8 +3,7 @@ module LoomExt::CoreMods
 
     register_mod :files
 
-    def initialize(shell, paths=nil)
-      super(shell)
+    def init_action(paths)
       @paths = [paths].flatten.compact
     end
 
@@ -13,11 +12,12 @@ module LoomExt::CoreMods
     # Executes #{action} for each path in #{paths} or #{@paths}. If
     # action is not given, a block is expected to which each path will
     # be passed.
-    def for_paths(*paths, action: nil, flags: nil, &block)
-      raise 'use either action or block in for_paths' if action && block_given?
-      raise 'use either action or block in for_paths' unless action || block_given?
+    def each_path(action: nil, flags: nil, &block)
+      raise 'use either action or block in each_path' if action && block_given?
+      raise 'use either action or block in each_path' unless action || block_given?
 
-      get_paths(*paths).each do |p|
+      @paths.each do |p|
+        raise "prefix relative paths with '.': #{p}" unless p.match /^[.]?\//
         if block
           yield p
         else
@@ -25,80 +25,71 @@ module LoomExt::CoreMods
           shell.execute action, cmd
         end
       end
-      self
-    end
 
-    ##
-    # Returns either a list of paths used to initialize this file mod,
-    # or the override paths. Paths are validated to be either absolute
-    # or explicitly relative with a leading '.'
-    def get_paths(*override_paths)
-      paths = override_paths.empty? ? @paths : override_paths
-      paths.each do |p|
-        raise "prefix relative paths with '.': #{p}" unless p.match /^[.]?\//
-      end
+      # Return self for chaining in pattern files
+      self
     end
 
     module Actions
 
-      def cat(*paths)
-        for_paths *paths do |p|
+      def cat
+        each_path do |p|
           shell.capture "cat #{p}"
         end
       end
 
-      def rm(*paths)
-        for_paths *paths do |p|
+      def rm
+        each_path do |p|
           shell.capture "rm -f #{p}"
         end
       end
 
-      def match?(*paths, pattern: /./)
+      def match?(pattern: /./)
         all = true
-        for_paths *paths do |p|
+        each_path do |p|
           file = shell.capture "cat #{p}"
           all &&= file.match pattern
         end
         all
       end
 
-      def gsub(*paths, pattern: nil, replace: nil, &block)
-        for_paths *paths do |p|
-          file = shell.capture "cat #{p}"
-          file.gsub!(pattern, replace, &block) unless pattern.nil?
-          write p, :text => file
+      def gsub(pattern: nil, replace: nil, &block)
+        each_path do |p|
+          contents = shell.capture "cat #{p}"
+          contents.gsub!(pattern, replace, &block) unless pattern.nil?
+          write :text => contents
         end
       end
 
-      def chown(*paths, user: nil, group: nil, **opts)
-        group_arg = group && ":" + group
+      def chown(user: nil, group: nil)
+        group_arg = group && ":" + group.to_s
 
-        for_paths *paths do |p|
-          shell.exec :chown, [user, group_arg].compact.join, p
+        each_path do |p|
+          shell.exec :chown, [user, group_arg].compact.map(&:to_s).join, p
         end
       end
 
-      def touch(*paths)
-        for_paths *paths, :action => :touch
+      def touch
+        each_path :action => :touch
       end
 
-      def mkdir(*paths, flags: nil, **opts)
-        for_paths *paths, :action => :mkdir, :flags => flags
+      def mkdir(flags: nil, **opts)
+        each_path :action => :mkdir, :flags => flags
       end
 
-      def append(*paths, text: "")
+      def append(text: "")
         text.gsub! "\n", "\\n"
 
-        for_paths *paths do |p|
+        each_path do |p|
           shell.verify "[ -f #{p} ]"
           shell.exec "/bin/echo -e '#{text}' >> #{p}"
         end
       end
 
-      def write(*paths, text: "")
+      def write(text: "")
         text.gsub! "\n", "\\n"
 
-        for_paths *paths do |p|
+        each_path do |p|
           shell.exec "/bin/echo -e '#{text}' | tee #{p}"
         end
       end

@@ -5,6 +5,8 @@ all_patterns=$(bin/loom patterns --print \
 			-t \
 			-l ${spec_file})
 
+addl_args="${@}"
+
 bin/loom weave ${all_patterns} \
 	 -t \
 	 -l ${spec_file} \
@@ -12,7 +14,8 @@ bin/loom weave ${all_patterns} \
 	 -H vm0.local \
 	 -X sshkit_log_level=warn \
 	 -X log_device=stderr \
-	 -X run_failure_strategy=cowboy
+	 -X run_failure_strategy=cowboy \
+	 ${addl_args}
 rc=$?
 
 # expect exit code 104 (100 for patterns execution error + # expected failures):

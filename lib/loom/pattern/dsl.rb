@@ -8,9 +8,11 @@ module Loom::Pattern
     end
     alias_method :desc, :description
 
-    def with_facts(**new_facts)
+    def with_facts(**new_facts, &block)
       @facts ||= {}
       @facts.merge! new_facts
+      yield_result = yield @facts if block_given?
+      @facts = yield_result if yield_result.is_a? Hash
     end
 
     def pattern(name, &block)

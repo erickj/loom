@@ -1,8 +1,11 @@
+# TODO: The method names in this file are atrocious and confusing, need to
+# rethink these names and simplify this class.
 module Loom::Mods
   class ActionProxy
 
-    def initialize(mod)
+    def initialize(mod, shell_api)
       @mod = mod
+      @shell_api = shell_api
       @nested_action_proxies = {}
     end
 
@@ -31,9 +34,20 @@ module Loom::Mods
       def install_root_actions(action_map)
         action_map.action_tuples.each do |tuple|
           public_action_name = tuple[0]
+          # TODO: What I've done here w/ bound_action_name (remapping methods
+          # from a given name to a flattened namespace on the Mod object) is
+          # very very strange. Just storing/binding/calling a Proc would be more
+          # idiomatic.
           bound_action_name = tuple[1]
 
           define_method public_action_name do |*args, &block|
+            # TODO: Effectively this is the API for all mods, but it's burried
+            # here in the middle of nowhere. Add documentation - or make it
+            # easier to read.
+            Loom.log.debug2(self) do
+              "proxy to mod #{@mod} => #{public_action_name}: #{args} #{block}"
+            end
+
             @mod.send bound_action_name, *args, &block
           end
           Loom.log.debug2 self do

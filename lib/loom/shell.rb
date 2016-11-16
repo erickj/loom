@@ -2,35 +2,43 @@ require "forwardable"
 require "sshkit"
 
 module Loom
+
+  # TODO: Redefine Shell to be a module, and rename/move ShellApi =>
+  # Shell::Api, CommandResult, ShellSession => Shell::Session,
+  # LocalShell into the module. Think of a more descriptive name for
+  # what is now Shell.. Shell::Core maybe? (that kind of sucks).
   class Shell
 
     VerifyError = Class.new Loom::LoomError
 
-    def initialize(sshkit_backend, dry_run=false)
+    def initialize(mod_loader, sshkit_backend, dry_run=false)
       @dry_run = dry_run
-      @mod_loader = Loom::Mods::ModLoader.new self
+      @mod_loader = mod_loader
+      @sshkit_backend = sshkit_backend
+
       @session = ShellSession.new
       @shell_api = ShellApi.new self
-
-      @sshkit_backend = sshkit_backend
 
       @cmd_wrappers = []
       @sudo_users = []
       @sudo_dir = nil
     end
 
-    attr_reader :session, :mod_loader, :shell_api
-    alias_method :mods, :mod_loader
+    attr_reader :session, :shell_api, :mod_loader
 
     def local
-      @local ||= LocalShell.new @session, @dry_run
+      @local ||= LocalShell.new @mod_loader, @session, @dry_run
     end
 
     def test(*cmd, check: :exit_status)
+      # TODO: This smells like a hack. I can't rely on Command#is_success?  here
+      # (returned from execute) because I'm overriding it with :is_test =>
+      # true. Fix Command#is_success? to not be a lie.. that is a lazy hack for
+      # result reporting (I think the fix & feature) is to define Command
+      # objects and declare style of reporting & error code handling it
+      # has. Commands can be defined to ignore errors and just return their
+      # results.
       execute *cmd, :is_test => true
-      # This smells like a hack. We can't rely on Command#is_success?
-      # here (returned from execute) because we're overriding it with
-      # :is_test => true.
 
       case check
       when :exit_status
@@ -51,10 +59,11 @@ module Loom
     end
 
     def wrap(wrapper, should_quote: true, &block)
-      @cmd_wrappers <<  CmdWrapperSpec.new(wrapper, should_quote)
+      raise "missing block for +wrap+" unless block_given?
 
+      @cmd_wrappers <<  CmdWrapperSpec.new(wrapper, should_quote)
       begin
-        yield if block_given?
+        yield
       ensure
         @cmd_wrappers.pop
       end
@@ -118,12 +127,14 @@ module Loom
     def create_command(*args)
       cmd = args.flatten.map(&:to_s).join " "
 
+      # Useful for timing a set of commands, or timeout... anytime you want to
+      # prefix a group of commands.
       cmd = @cmd_wrappers.reduce(cmd) do |cmd, wrapper|
         wrapper.wrap cmd
       end
 
-      # sudo could also probably be implemented as a CmdWrapperSpec,
-      # but it's not worth the hack.
+      # sudo could probably be implemented as a CmdWrapperSpec, but it's not
+      # worth the hack.
       cmd = @sudo_users.reverse.reduce(cmd) do |cmd, sudo_user|
         quote_escaped_cmd = CmdWrapperSpec.quote_escape_cmd cmd
         "sudo -u #{sudo_user} -- /bin/sh -c \"#{quote_escaped_cmd}\""
@@ -156,7 +167,8 @@ module Loom
   end
 
   ##
-  # A facade for the shell API exposed to Loom files
+  # A facade for the shell API exposed to Loom files. This is the +loom+ object
+  # passed to patterns.
   class ShellApi
 
     def initialize(shell)
@@ -170,7 +182,7 @@ module Loom
 
     def method_missing(name, *args, &block)
       Loom.log.debug3(self) { "shell api => #{name} #{args} #{block}" }
-      @mod_loader.send name, *args, &block
+      @mod_loader.send name, @shell, *args, &block
     end
   end
 
@@ -221,8 +233,8 @@ module Loom
   end
 
   class LocalShell < Shell
-    def initialize(session, dry_run)
-      super SSHKit::Backend::Local.new, dry_run
+    def initialize(mod_loader, session, dry_run)
+      super mod_loader, SSHKit::Backend::Local.new, dry_run
       @session = session
     end
 

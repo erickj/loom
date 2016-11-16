@@ -3,10 +3,10 @@ module LoomExt::CoreMods
 
     class PkgAdapter
 
-      attr_reader :shell
+      attr_reader :loom
 
-      def initialize(shell)
-        @shell = shell
+      def initialize(loom)
+        @loom = loom
       end
 
       def ensure_installed(pkg_name)
@@ -36,44 +36,44 @@ module LoomExt::CoreMods
 
     class GemAdapter < PkgAdapter
       def installed?(pkg_name)
-        shell.test :ruby, "-r#{pkg_name} -e exit"
+        loom.test "ruby -r#{pkg_name} -e exit"
       end
 
       def install(pkg_name)
-        shell.exec :gem, "install #{pkg_name}"
+        loom << "gem install #{pkg_name}"
       end
     end
 
     class DpkgAdapter < PkgAdapter
 
       def installed?(pkg_name)
-        shell.test :dpkg, "-s #{pkg_name}"
+        loom.test "dpkg -s #{pkg_name}"
       end
     end
 
     class AptAdapter < DpkgAdapter
 
       def install(pkg_name)
-        shell.mods.net.with_net { shell.exec :echo, "apt-get install #{pkg_name}" }
+        loom.net.with_net { loom << "echo apt-get install #{pkg_name}" }
       end
 
       def uninstall(pkg_name)
-        shell.exec :echo, "apt uninstall"
+        loom << "echo apt uninstall"
       end
 
       def update_cache
-        shell.mods.net.with_net { shell.exec :apt, "update" }
+        loom.net.with_net { loom << "apt update" }
       end
 
       def upgrade(pkg_name)
-        shell.mods.net.with_net { shell.exec :apt, "upgrade" }
+        loom.net.with_net { loom << "apt upgrade" }
       end
     end
 
     class RpmAdapter < PkgAdapter
 
       def installed?(pkg_name)
-        shell.test :rpm, "-q #{pkg_name}"
+        loom.test :rpm, "-q #{pkg_name}"
       end
 
     end
@@ -81,15 +81,15 @@ module LoomExt::CoreMods
     class DnfAdapter < RpmAdapter
 
       def install(pkg_name)
-        shell.mods.net.with_net { shell.exec :dnf, "install #{pkg_name}" }
+        loom.net.with_net { loom << "dnf install #{pkg_name}" }
       end
 
       def uninstall(pkg_name)
-        shell.exec :echo, "dnf uninstall"
+        loom << "echo dnf uninstall"
       end
 
       def update_cache
-        shell.mods.net.with_net { shell.exec :dnf, "updateinfo" }
+        loom.net.with_net { loom << "dnf updateinfo" }
       end
 
       def upgrade(pkg_name)

@@ -1,27 +1,28 @@
 require "loomext/all"
 
-desc "Reports `uptime` status"
-pattern :uptime do |loom, facts|
-  loom << :uptime
-  loom << "echo out to stderr 1>&2"
-
-  loom.local << :hostname
-end
-
-desc "Prints all known facts"
-pattern :facts do |loom, facts|
-  puts facts
-end
-
-desc "cd's to the /etc directory and runs `pwd`"
-pattern :cd do |loom, facts|
-  loom.cd "/etc" do
-    loom << :pwd
-  end
+desc "Prints some known facts"
+pattern :three_facts do |loom, facts|
+  puts "first 3 facts..."
+  puts facts.facts.to_a.slice(0, 3).map { |tuple| tuple.join "=" }.join("\n")
 end
 
 module Exec
   include Loom::Pattern
+
+  desc "Reports `uptime` status"
+  pattern :uptime do |loom, facts|
+    loom << :uptime
+    loom << "echo out to stderr 1>&2"
+
+    loom.local << :hostname
+  end
+
+  desc "cd's to the /etc directory and runs `pwd`"
+  pattern :cd do |loom, facts|
+    loom.cd "/etc" do
+      loom << :pwd
+    end
+  end
 
   desc "Tests a condition."
   pattern :test do |loom, facts|
@@ -40,12 +41,16 @@ module Exec
 
   desc "Tests a match condition."
   pattern :match do |loom, facts|
-    unless loom.files("/etc/hosts").match? :pattern => "aldsfja;ldjf"
-      loom << "echo i should not match garbage"
+    if loom.files("/etc/hosts").match? :pattern => "aldsfja;ldjf"
+      raise "should not match garbage"
+    else
+      loom << "echo I didnt match garbage"
     end
 
     unless loom.files("/etc/hosts").match? :pattern => "localhost"
-      loom << "echo i should match localhost"
+      raise "should match localhost"
+    else
+      loom << "echo I did match my target"
     end
   end
 
@@ -82,12 +87,12 @@ module Net
 
   desc "tests the net package, with_net check"
   pattern :check_net do |loom, facts|
-    unless loom.net(:check_host => '127.0.0.1').has_net?
+    unless loom.net(check_host: '127.0.0.1').has_net?
       raise 'can not ping localhost'
     end
 
     has_local_net = false
-    loom.net(:check_host => '127.0.0.1').with_net do
+    loom.net(check_host: '127.0.0.1').with_net do
       has_local_net = true
     end
     raise "should have local net" unless has_local_net
@@ -96,184 +101,199 @@ module Net
 
   desc "expected check_net failures"
   pattern :check_net_fail do |loom, facts|
-    loom.net(:timeout => 2, :check_host => '1.1.1.1').check_net
+    loom.net(timeout: 2, check_host: '1.1.1.1').check_net
   end
 end
 
-module Test
+module Files
+  include Loom::Pattern
 
-  module Files
-    include Loom::Pattern
+  desc "Reads a file"
+  pattern :read do |loom, facts|
+    loom.files("/etc/hosts").cat
+  end
 
-    desc "Reads a file"
-    pattern :read do |loom, facts|
-      loom.files("/etc/hosts").cat
-    end
-
-    desc "Gsubs file text"
-    pattern :gsub do |loom, facts|
-      loom.files("/tmp/garbage").write :text => <<EOS
+  desc "Gsubs file text"
+  pattern :gsub do |loom, facts|
+    loom.files("/tmp/garbage").write text: <<EOS
 This is a bunch of junk
 192.123.456.0\t\thostname.xyz
 EOS
-      loom.files("/tmp/garbage")
-        .cat
-        .gsub(pattern: /[\d]{3}/, replace: "xxx")
-        .cat
+
+    loom.files("/tmp/garbage")
+      .cat
+      .gsub(pattern: /[\d]{3}/, replace: "xxx")
+      .cat
+  end
+
+  desc "Chowns a file"
+  pattern :chown do |loom, facts|
+    loom.files("/tmp/chown.me")
+      .touch
+      .append(text: "this file will be owned by root")
+
+    loom.sudo do
+      loom.files("/tmp/chown.me").chown user: :root
+      puts loom << "ls -lZ /tmp/chown.me"
+
+      loom.files("/tmp/chown.me").chown user: :root, group: :root
+    end
+    puts loom << "ls -lZ /tmp/chown.me"
+
+    loom.sudo { loom << "rm /tmp/chown.me" }
+  end
+end
+
+module Shell
+  include Loom::Pattern
+
+  desc "Executes some commands in a subshell"
+  pattern :subshell do |loom, facts|
+    loom << "(echo $$; echo $BASHPID; whoami)"
+    loom << "(sudo -i -u root whoami)"
+
+    loom.local << "(echo $$; echo $BASHPID; whoami)"
+    #    loom.local << "(sudo -i -u root whoami)"
+  end
+
+  desc "Tests a bunch of nested sudo scenarios"
+  pattern :sudo do |loom, facts|
+    loom.sudo user: "root" do
+      loom << "pwd"
+      loom << :whoami
+      loom << "touch loom.file"
+
+      loom.sudo do
+        loom << :whoami
+        loom << "pwd"
+        loom << "touch root.file"
+
+        loom.user.add_system_user :postgres, uid: 999
+        loom.sudo user: :postgres do
+          loom << :whoami
+          loom << "cd /tmp; touch postgres.file"
+        end
+        loom.user.remove :postgres
+
+        loom << "touch root.file2"
+      end
+    end
+
+    loom.cd "/tmp" do
+      loom << :pwd
+      loom.sudo user: :root, cmd: :pwd do loom << :pwd end
+      loom << :pwd
+    end
+
+  end
+end
+
+module Parent
+  include Loom::Pattern
+
+  with_facts :outer_fact => :outer, :replaced => :original
+
+  before do
+    puts "Test::Parent => before"
+  end
+
+  after do
+    puts "Test::Parent => after"
+  end
+
+  desc "Checks facts on a parent pattern"
+  pattern :check_facts do |loom, facts|
+    unless facts[:outer_fact] == :outer
+      raise "expected outer fact => #{facts[:outer_fact]}"
     end
   end
 
-  module Parent
+  module Child
     include Loom::Pattern
 
-    with_facts :outer_fact => :outer, :replaced => :original
+    with_facts :inner_fact => :inner, :replaced => :override
 
     before do
-      puts "Test::Parent => before"
+      puts "Test::Parent::Child => before"
     end
 
     after do
-      puts "Test::Parent => after"
+      puts "Test::Parent::Child => after"
     end
 
-    desc "Checks facts on a parent pattern"
+    desc "Checks inherited facts on a cihld pattern"
     pattern :check_facts do |loom, facts|
+      unless facts[:inner_fact] == :inner
+        raise "expected inner fact => #{facts[:inner_fact]}"
+      end
       unless facts[:outer_fact] == :outer
         raise "expected outer fact => #{facts[:outer_fact]}"
       end
-    end
-
-    module Child
-      include Loom::Pattern
-
-      with_facts :inner_fact => :inner, :replaced => :override
-
-      before do
-        puts "Test::Parent::Child => before"
-      end
-
-      after do
-        puts "Test::Parent::Child => after"
-      end
-
-      desc "Checks inherited facts on a cihld pattern"
-      pattern :check_facts do |loom, facts|
-        unless facts[:inner_fact] == :inner
-          raise "expected inner fact => #{facts[:inner_fact]}"
-        end
-        unless facts[:outer_fact] == :outer
-          raise "expected outer fact => #{facts[:outer_fact]}"
-        end
-        unless facts[:replaced] == :override
-          raise "expected replaced fact => #{facts[:replaced_fact]}"
-        end
+      unless facts[:replaced] == :override
+        raise "expected replaced fact => #{facts[:replaced_fact]}"
       end
     end
   end
+end
 
-  module Shell
-    include Loom::Pattern
+module User
+  include Loom::Pattern
 
-    desc "Executes some commands in a subshell"
-    pattern :subshell do |loom, facts|
-      loom << "(echo $$; echo $BASHPID; whoami)"
-      loom << "(sudo -i -u root whoami)"
+  desc "Adds a bunch of users and then removes them right away"
+  pattern :add_users do |loom, facts|
+    loom.sudo do
+      loom.user.add :nara, uid: 1001, home_dir: "/home/nara"
+      loom.user.add :marrian, home_dir: "/home/marrian"
 
-      loom.local << "(echo $$; echo $BASHPID; whoami)"
-      #    loom.local << "(sudo -i -u root whoami)"
-    end
+      loom.user.add_system_user :app, uid: 900
+      loom.user.add_system_user :batch
 
-    desc "Tests a bunch of nested sudo scenarios"
-    pattern :sudo do |loom, facts|
-      loom.sudo "root" do
-        loom << "pwd"
-        loom << :whoami
-        loom << "touch loom.file"
-
-        loom.sudo do
-          loom << :whoami
-          loom << "pwd"
-          loom << "touch root.file"
-
-          loom.user.add_system_user :postgres, uid: 999
-          loom.sudo :postgres do
-            loom << :whoami
-            loom << "cd /tmp; touch postgres.file"
-          end
-          loom.user.remove :postgres
-
-          loom << "touch root.file2"
-        end
-      end
-
-      loom.cd "/tmp" do
-        loom << :pwd
-        loom.sudo :root, :pwd do loom << :pwd end
-        loom << :pwd
-      end
-
+      loom.user.remove :nara
+      loom.user.remove :marrian
+      loom.user.remove :app
+      loom.user.remove :batch
     end
   end
 
-  module User
-    include Loom::Pattern
-
-    desc "Adds a bunch of users and then removes them right away"
-    pattern :add_users do |loom, facts|
-      loom.sudo do
-        loom.user.add :nara, uid: 1001, home_dir: "/home/nara"
-        loom.user.add :marrian, home_dir: "/home/marrian"
-
-        loom.user.add_system_user :app, uid: 900
-        loom.user.add_system_user :batch
-
-        loom.user.remove :nara
-        loom.user.remove :marrian
-        loom.user.remove :app
-        loom.user.remove :batch
-      end
+  desc "Makes the postgres user a sudoer"
+  pattern :sudoers do |loom, facts|
+    loom.sudo do
+      loom.user.add_system_user :postgres, uid: 999
+      loom.user.make_sudoer :postgres
+      loom.user.remove :postgres
     end
+  end
+end
 
-    desc "Makes the postgres user a sudoer"
-    pattern :sudoers do |loom, facts|
-      loom.sudo do
-        loom.user.add_system_user :postgres, uid: 999
-        loom.user.make_sudoer :postgres
-        loom.user.remove :postgres
-      end
+module Package
+  include Loom::Pattern
+
+  namespace :pkg
+
+  before do |loom, facts|
+    puts "#{self} in before"
+  end
+
+  after do
+    puts "#{self} in after"
+  end
+
+  desc "Updates the default package manager cache"
+  pattern :update_cache do |loom, facts|
+    loom.sudo { loom.pkg.update_cache }
+  end
+
+  desc "Installs Apache HTTP server"
+  pattern :install_httpd do |loom, facts|
+    loom.sudo do
+      loom.pkg.install 'apache2' unless loom.pkg.installed? 'apache2'
     end
   end
 
-  module Package
-    include Loom::Pattern
-
-    namespace :pkg
-
-    before do |loom, facts|
-      puts "#{self} in before"
-    end
-
-    after do
-      puts "#{self} in after"
-    end
-
-    desc "Updates the default package manager cache"
-    pattern :update_cache do |loom, facts|
-      loom.sudo { loom.pkg.update_cache }
-    end
-
-    desc "Installs Apache HTTP server"
-    pattern :install_httpd do |loom, facts|
-      loom.sudo do
-        loom.pkg.install 'apache2' unless loom.pkg.installed? 'apache2'
-      end
-    end
-
-    desc "Installs Facter GEM"
-    pattern :install_facter do |loom, facts|
-      loom.sudo do
-        loom.pkg[:gem].ensure_installed :facter
-      end
+  desc "Installs Facter GEM"
+  pattern :install_facter do |loom, facts|
+    loom.sudo do
+      loom.pkg[:gem].ensure_installed :facter
     end
   end
 end

@@ -59,7 +59,7 @@ module Loom::Facts
             if fact_map[k]
               Loom.log.warn "overriding fact => #{k}"
             end
-            Loom.log.debug3(self) { "adding fact => #{k}=#{v.to_s}" }
+            Loom.log.debug5(self) { "adding fact => #{k}=#{v.to_s}" }
             fact_map[k] = v
           end
         end

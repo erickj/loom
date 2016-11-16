@@ -1,6 +1,9 @@
 require 'socket'
 
 module Loom
+
+  # TODO: Rename this to something like SSHKitWrapper, DSL is a
+  # terribly misinformative name.
   module DSL
 
     UnexpectedHostError = Class.new Loom::LoomError

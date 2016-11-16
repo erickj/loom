@@ -16,6 +16,7 @@ module Loom
       @inventory_list = nil
       @active_hosts = nil
       @pattern_refs = nil
+      @mod_loader = nil
 
       Loom.log.debug1(self) do
         "initialized runner with config => #{loom_config.dump}"
@@ -69,6 +70,8 @@ module Loom
 
       pattern_loader = Loom::Pattern::Loader.load @loom_config
       @pattern_refs = pattern_loader.patterns @pattern_slugs
+
+      @mod_loader = Loom::Mods::ModLoader.new @loom_config
     end
 
     def run_internal(dry_run)
@@ -89,16 +92,19 @@ module Loom
           end
 
           Loom.log.debug "collecting facts for => #{pattern_description}"
-          # Collect facts for each pattern run on each host, this way
-          # if one pattern run updates would be facts, the next
-          # pattern will see the new fact.
-          fact_shell = Loom::Shell.new sshkit_backend, dry_run
+          # Collect facts for each pattern run on each host, this way if one
+          # pattern run updates would be facts, the next pattern will see the
+          # new fact.
+          fact_shell = Loom::Shell.new @mod_loader, sshkit_backend, dry_run
           fact_set = Loom::Facts.fact_set host_spec, fact_shell, @loom_config
 
           Loom.log.info "running pattern => #{pattern_description}"
-          # Each pattern execution needs its own shell and mod loader to
-          # make sure context is reported correctly
-          pattern_shell = Loom::Shell.new sshkit_backend, dry_run
+          # Each pattern execution needs its own shell and mod loader to make
+          # sure context is reported correctly (this is probably a hack, there
+          # should just be a way to clear/ignore state from certain commands -
+          # like the fact_finding ones above).
+          pattern_shell = Loom::Shell.new @mod_loader, sshkit_backend, dry_run
+
           execute_pattern pattern_ref, pattern_shell, fact_set
         end
       end
@@ -110,17 +116,21 @@ module Loom
       result_reporter = Loom::Pattern::ResultReporter.new(
         @loom_config, pattern_ref.slug, hostname, shell_session)
 
+      # TODO: This is a crappy mechanism for tracking errors, there should be an
+      # exception thrown inside of Shell when a command fails and pattern
+      # execution should stop. All errors should come from exceptions.
+      run_failure = []
       begin
         pattern_ref.call(shell.shell_api, fact_set)
       rescue Loom::ExecutionError => e
-        Loom.log.warn "execution error => #{e}"
-        @run_failures << e.message
+        Loom.log.error "execution error => #{e}"
+        run_failure << e.message
       end
 
       result_reporter.write_report
 
       unless shell_session.success?
-        @run_failures << result_reporter.failure_summary
+        run_failure << result_reporter.failure_summary
 
         failure_strategy = @loom_config.run_failure_strategy
         case failure_strategy.to_sym
@@ -138,6 +148,7 @@ module Loom
         end
       end
       @result_reports << result_reporter
+      @run_failures << run_failure unless run_failure.empty?
     end
   end
 end

@@ -34,7 +34,7 @@ module Loom::Pattern
         @definition_ctx = definition_ctx
       end
 
-      def run(*args)
+      def run(shell_api, fact_set)
         before_hooks = @definition_ctx.before_hooks
         after_hooks = @definition_ctx.after_hooks
 
@@ -42,15 +42,16 @@ module Loom::Pattern
           Loom.log.debug1(self) { "before hooks => #{before_hooks}"}
           before_hooks.each do |hook|
             Loom.log.debug2(self) { "executing before hook => #{hook}"}
-            self.instance_exec *args, &hook.block
+            self.instance_exec shell_api, fact_set, &hook.block
           end
 
-          apply_pattern *args
+          # This is the entry point into calling patterns.
+          apply_pattern shell_api, fact_set
         ensure
           Loom.log.debug1(self) { "after hooks => #{after_hooks}" }
           after_hooks.each do |hook|
             Loom.log.debug2(self) { "executing after hook => #{hook}"}
-            self.instance_exec *args, &hook.block
+            self.instance_exec shell_api, fact_set, &hook.block
           end
         end
       end
