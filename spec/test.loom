@@ -208,10 +208,28 @@ module Parent
     end
   end
 
+  let(:a_let_key) { "the value" }
+  let(:a_fact_based_let) { |facts| facts[:outer_fact].to_s + "/let" }
+  let(:a_referencing_let) { a_let_key + " referenced" }
+
+  desc "Checks let defines"
+  pattern :check_lets do |loom, facts|
+    raise "bad let :a_let_key" unless a_let_key == "the value"
+    raise "bad let :a_fact_based_let" unless a_fact_based_let == "outer/let"
+
+    unless a_referencing_let == "the value referenced"
+      raise "bad let :a_referencing_let => #{a_referencing_let}"
+    end
+
+    puts "a_let_key: %s" % a_let_key
+    puts "a_fact_based_let: %s" % a_fact_based_let
+  end
+
   module Child
     include Loom::Pattern
 
     with_facts :inner_fact => :inner, :replaced => :override
+    let(:a_let_key) { |facts|  facts[:inner_fact].to_s + " overrides parent" }
 
     before do
       puts "Test::Parent::Child => before"
@@ -219,6 +237,15 @@ module Parent
 
     after do
       puts "Test::Parent::Child => after"
+    end
+
+    desc "Check let overrides"
+    pattern :check_let_overrides do |loom, facts|
+      raise "bad let :a_let_key" unless a_let_key == "inner overrides parent"
+      raise "bad let :a_fact_based_let" unless a_fact_based_let == "outer/let"
+
+      puts "child a_let_key: %s" % a_let_key
+      puts "child a_fact_based_let: %s" % a_fact_based_let
     end
 
     desc "Checks inherited facts on a cihld pattern"

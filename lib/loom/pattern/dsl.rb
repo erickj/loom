@@ -15,6 +15,11 @@ module Loom::Pattern
       @facts = yield_result if yield_result.is_a? Hash
     end
 
+    def let(name, &block)
+      @let_map ||= {}
+      @let_map[name.to_sym] = block
+    end
+
     def pattern(name, &block)
       Loom.log.debug3(self) { "defined pattern method => #{name}" }
       @pattern_methods ||= []
@@ -63,6 +68,10 @@ module Loom::Pattern
 
     def facts
       @facts || {}
+    end
+
+    def let_map
+      @let_map || {}
     end
   end
 end
