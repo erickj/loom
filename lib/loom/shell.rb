@@ -69,9 +69,9 @@ module Loom
       end
     end
 
-    def sudo(user=nil, *args, &block)
+    def sudo(user=nil, *cmd, &block)
       user ||= :root
-      Loom.log.debug1(self) { "sudo => #{user} #{args} #{block}" }
+      Loom.log.debug1(self) { "sudo => #{user} #{cmd} #{block}" }
 
       is_new_sudoer = @sudo_users.last.to_sym != user.to_sym rescue true
 
@@ -79,7 +79,7 @@ module Loom
       @sudo_users << user if is_new_sudoer
 
       begin
-        execute *args unless args.empty?
+        execute *cmd unless cmd.empty?
         yield if block_given?
       ensure
         @sudo_users.pop if is_new_sudoer

@@ -12,8 +12,7 @@ module Exec
   desc "Reports `uptime` status"
   pattern :uptime do |loom, facts|
     loom << :uptime
-    loom << "echo out to stderr 1>&2"
-
+    loom << :hostname
     loom.local << :hostname
   end
 
@@ -321,6 +320,21 @@ module Package
   pattern :install_facter do |loom, facts|
     loom.sudo do
       loom.pkg[:gem].ensure_installed :facter
+    end
+  end
+end
+
+module ErrorHandling
+  include Loom::Pattern
+
+  namespace :err
+
+  desc "Handle SSH disconnection errors"
+  pattern :ssh_disconnect do |loom, facts|
+    if facts[:really_really_reboot]
+      loom.sudo cmd: :reboot
+    else
+      puts "to REALLY reboot set fact[:really_really_reboot] = true"
     end
   end
 end

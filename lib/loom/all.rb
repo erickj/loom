@@ -2,6 +2,7 @@ require "sshkit"
 
 require_relative "core_ext"
 require_relative "method_signature"
+require_relative "trap"
 
 require_relative "logger"
 require_relative "config"
