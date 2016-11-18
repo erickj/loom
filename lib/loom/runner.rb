@@ -6,9 +6,11 @@ module Loom
 
     include Loom::DSL
 
-    def initialize(loom_config, pattern_slugs=[])
+    def initialize(loom_config, pattern_slugs=[], other_facts={})
       @pattern_slugs = pattern_slugs
       @loom_config = loom_config
+      @other_facts = other_facts
+
       @run_failures = []
       @result_reports = []
 
@@ -128,7 +130,9 @@ module Loom
             # pattern run updates would be facts, the next pattern will see the
             # new fact.
             fact_shell = Loom::Shell.new @mod_loader, sshkit_backend, dry_run
-            fact_set = Loom::Facts.fact_set host_spec, fact_shell, @loom_config
+
+            fact_set = Loom::Facts.fact_set(host_spec, fact_shell, @loom_config)
+                         .merge @other_facts
 
             Loom.log.info "running pattern => #{pattern_description}"
             # Each pattern execution needs its own shell and mod loader to make

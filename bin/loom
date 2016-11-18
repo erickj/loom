@@ -86,12 +86,23 @@ EOS
                  "Run all loaded the patterns"
         c.option "-n", "--dry-run",
                  "Don't run the patterns, only connect and log the expected patterns"
+        c.option "-F", "--fact F1=V1[,F2=V2,F3=V3]]]", "add custom fact"
+
         c.action do |patterns, options|
           if options.all
             patterns = Loom::Pattern::Loader.load(Loom.config).slugs
           end
 
-          runner = Loom::Runner.new Loom.config, patterns
+          other_facts = {}
+          if options.fact
+            fact_pairs = options.fact.split ","
+            fact_pairs.each do |pair|
+              key, val = pair.split "="
+              other_facts[key.to_sym] = val
+            end
+          end
+
+          runner = Loom::Runner.new Loom.config, patterns, other_facts
           runner.run options.dry_run
         end
       end
