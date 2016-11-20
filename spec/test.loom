@@ -338,3 +338,19 @@ module ErrorHandling
     end
   end
 end
+
+module VMs
+  include Loom::Pattern
+
+  desc "Check if some virtualbox vms exist"
+  pattern :vm_exists? do |loom, facts|
+    vm0_exists = loom.vbox.check_exists "vm0.local"
+    puts "Virtualbox VM 'vm0.local' exists: #{vm0_exists}"
+  end
+
+  desc "Takes a snapshot of a VM"
+  pattern :snap do |loom, facts|
+    loom.vbox.snapshot "vm0.local", snapshot_name: "test:snap"
+    loom.vbox.snapshot "vm0.local", action: :delete, snapshot_name: "test:snap"
+  end
+end
