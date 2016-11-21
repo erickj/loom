@@ -21,8 +21,8 @@ module Loom::Pattern
 
       begin
         run_context.run shell_api, fact_set
-      rescue
-        Loom.log.error "error executing pattern => #{slug}\n\t" + $!.message
+      rescue => e
+        Loom.log.error "error executing '#{slug}' in #{source_file} => #{e}"
         raise
       end
     end

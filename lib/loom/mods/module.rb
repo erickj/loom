@@ -7,7 +7,7 @@ module Loom::Mods
     attr_accessor :shell, :loom_config, :loom, :mods, :action_proxy
 
     def initialize(shell, loom_config)
-      unless shell && shell.is_a?(Loom::Shell)
+      unless shell && shell.is_a?(Loom::Shell::Core)
         raise "missing shell for mod #{self} => #{shell}"
       end
       unless loom_config && loom_config.is_a?(Loom::Config)

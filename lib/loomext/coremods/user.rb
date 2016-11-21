@@ -49,7 +49,7 @@ module LoomExt::CoreMods
         flags << "--groups %s" % groups.join(" ") unless groups.empty?
         flags << "--system" if is_system_user
 
-        loom << "useradd %s %s" % [flags.join(" "), user]
+        loom.exec :useradd, flags, user
       end
 
       def add_system_user(user, **user_fields)
@@ -67,7 +67,7 @@ module LoomExt::CoreMods
           return
         end
 
-        loom << "userdel -r %s" % user
+        loom.exec :userdel, "-r", user
       end
 
       def make_sudoer(user, sudoer_conf: nil)
@@ -80,8 +80,8 @@ module LoomExt::CoreMods
           return
         end
 
-        loom << %Q[echo "#{sudoer_conf}" >> #{LOOM_SUDOERS_FILE}]
-        loom << "chmod 0440 #{LOOM_SUDOERS_FILE}"
+        loom.exec :echo, %Q["#{sudoer_conf}" >> #{LOOM_SUDOERS_FILE}]
+        loom.exec :chmod, 0440, LOOM_SUDOERS_FILE
       end
     end
   end

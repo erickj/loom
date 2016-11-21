@@ -54,7 +54,9 @@ module Loom
         end
       rescue Loom::Trap::SignalExit => e
         Loom.log.error "exiting on signal  => #{e.signal}"
-        exit 2
+        # Exit with the signal code or 40 for unknown Signal
+        code = Signal.list[e.signal] || 40
+        exit code
       rescue PatternExecutionError => e
         num_patterns_failed = @run_failures.size
         Loom.log.error "error executing #{num_patterns_failed} patterns => #{e}"
@@ -114,7 +116,7 @@ module Loom
         begin
           @pattern_refs.each do |pattern_ref|
             slug = pattern_ref.slug
-            pattern_description = "[#{hostname}:#{slug}]"
+            pattern_description = "[#{hostname} => #{slug}]"
 
             if @caught_sig_int
               Loom.log.warn "caught SIGINT, skipping #{pattern_description}"
@@ -129,8 +131,7 @@ module Loom
             # Collect facts for each pattern run on each host, this way if one
             # pattern run updates would be facts, the next pattern will see the
             # new fact.
-            fact_shell = Loom::Shell.new @mod_loader, sshkit_backend, dry_run
-
+            fact_shell = Loom::Shell.create @mod_loader, sshkit_backend, dry_run
             fact_set = Loom::Facts.fact_set(host_spec, fact_shell, @loom_config)
                          .merge @other_facts
 
@@ -139,8 +140,9 @@ module Loom
             # sure context is reported correctly (this is probably a hack, there
             # should just be a way to clear/ignore state from certain commands -
             # like the fact_finding ones above).
-            pattern_shell = Loom::Shell.new @mod_loader, sshkit_backend, dry_run
+            pattern_shell = Loom::Shell.create @mod_loader, sshkit_backend, dry_run
 
+            Loom.log.warn "dry run only => #{pattern_description}" if dry_run
             execute_pattern pattern_ref, pattern_shell, fact_set
           end
         rescue IOError => e
@@ -170,13 +172,10 @@ module Loom
       begin
         pattern_ref.call(shell.shell_api, fact_set)
       rescue Loom::ExecutionError => e
-        Loom.log.error "execution error => #{e}"
+        Loom.log.debug e.backtrace.join "\n\t"
         run_failure << e
-      rescue => e
-        Loom.log.error "unexpected error during => #{e}"
-        run_failure << e
-        raise
       ensure
+        # TODO: this prints out [Result: OK] even if an exception is raised
         result_reporter.write_report
 
         # TODO: this is not the correct error condition.

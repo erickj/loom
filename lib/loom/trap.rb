@@ -9,7 +9,7 @@ module Loom
       end
     end
 
-    # See `man 7 signal`
+    # See `man 7 signal` or #{Signal.list}
     module Sig
       HUP = "HUP"
       INT = "INT"
@@ -20,6 +20,7 @@ module Loom
     end
 
     def self.install(signal, trap_handler)
+      raise "unknown signal => #{signal}" unless Signal.list[signal]
       Signal.trap signal do
         trap_handler.handle(signal)
       end

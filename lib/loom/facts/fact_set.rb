@@ -5,6 +5,7 @@ module Loom::Facts
 
     class << self
       def disable_for_host(host_spec, klass)
+        Loom.log.warn "disabling fact provider => #{klass} on #{host_spec.hostname}"
         @disabled_providers ||= {}
         @disabled_providers[host_spec.hostname] ||= []
         @disabled_providers[host_spec.hostname] << klass
@@ -30,7 +31,6 @@ module Loom::Facts
     end
 
     def disable(host_spec)
-      Loom.log.warn "disabling fact provider => #{self}"
       Provider.disable_for_host host_spec, self.class
     end
 
@@ -53,14 +53,20 @@ module Loom::Facts
         fact_providers.each do |provider|
           next if Provider.disabled_for_host?(host_spec, provider.class)
 
-          Loom.log.debug(self) { "loading facts from provider => #{provider}" }
-          provider.collect_facts.each do |k, v|
-            k = k.to_sym
-            if fact_map[k]
-              Loom.log.warn "overriding fact => #{k}"
+          Loom.log.debug { "loading facts from provider => #{provider}" }
+
+          begin
+            provider.collect_facts.each do |k, v|
+              k = k.to_sym
+              if fact_map[k]
+                Loom.log.warn "overriding fact => #{k}"
+              end
+              Loom.log.debug5(self) { "adding fact => #{k}=#{v.to_s}" }
+              fact_map[k] = v
             end
-            Loom.log.debug5(self) { "adding fact => #{k}=#{v.to_s}" }
-            fact_map[k] = v
+          rescue => e
+            Loom.log.error "error executing fact provider #{provider.class} => #{e.message}"
+            provider.disable(host_spec)
           end
         end
 

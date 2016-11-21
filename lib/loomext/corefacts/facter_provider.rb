@@ -17,8 +17,8 @@ module LoomExt::CoreFacts
         return {}
       end
 
-      yaml_facts = @shell.capture "facter --yaml"
-      YAML.load yaml_facts
+      yaml_facts = @shell.capture :facter, "--yaml"
+      yaml_facts.nil? ? {} : YAML.load(yaml_facts)
     end
   end
 end

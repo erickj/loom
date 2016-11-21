@@ -17,12 +17,13 @@ module LoomExt::CoreMods
       raise 'use either action or block in each_path' unless action || block_given?
 
       @paths.each do |p|
+        next unless p
+
         raise "prefix relative paths with '.': #{p}" unless p.match /^[.]?\//
         if block
           yield p
         else
-          cmd = [flags, p].join ' '
-          shell.execute action, cmd
+          shell.execute action, flags, p
         end
       end
 
@@ -34,30 +35,32 @@ module LoomExt::CoreMods
 
       def cat
         each_path do |p|
-          shell.capture "cat #{p}"
+          shell.capture :cat, p
         end
       end
 
       def rm
         each_path do |p|
-          shell.capture "rm -f #{p}"
+          shell.capture :rm, "-f", p
         end
       end
 
       def match?(pattern: /./)
         all = true
         each_path do |p|
-          file = shell.capture "cat #{p}"
-          all &&= file.match pattern
+          file = shell.capture :cat, p
+          all &&= file.match(pattern)
         end
         all
       end
 
       def gsub(pattern: nil, replace: nil, &block)
         each_path do |p|
-          contents = shell.capture "cat #{p}"
-          contents.gsub!(pattern, replace, &block) unless pattern.nil?
-          write :text => contents
+          contents = shell.capture :cat, p
+          if contents
+            contents.gsub!(pattern, replace, &block) unless pattern.nil?
+            write :text => contents
+          end
         end
       end
 
@@ -65,7 +68,7 @@ module LoomExt::CoreMods
         group_arg = group && ":" + group.to_s
 
         each_path do |p|
-          shell.exec :chown, [user, group_arg].compact.map(&:to_s).join, p
+          shell.execute :chown, [user, group_arg].compact.map(&:to_s).join, p
         end
       end
 
@@ -82,7 +85,7 @@ module LoomExt::CoreMods
 
         each_path do |p|
           shell.verify "[ -f #{p} ]"
-          shell.exec "/bin/echo -e '#{text}' >> #{p}"
+          shell.exec :"/bin/echo", "-e", "'#{text}'", ">>", p
         end
       end
 
@@ -90,7 +93,7 @@ module LoomExt::CoreMods
         text.gsub! "\n", "\\n"
 
         each_path do |p|
-          shell.exec "/bin/echo -e '#{text}' | tee #{p}"
+          shell.exec :"/bin/echo", "-e", "'#{text}'", "|", :tee, p
         end
       end
 

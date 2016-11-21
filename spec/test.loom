@@ -6,78 +6,74 @@ pattern :three_facts do |loom, facts|
   puts facts.facts.to_a.slice(0, 3).map { |tuple| tuple.join "=" }.join("\n")
 end
 
-module Exec
-  include Loom::Pattern
+desc "Reports `uptime` status"
+pattern :uptime do |loom, facts|
+  loom << :uptime
+  loom << :hostname
+  loom.local << :hostname
+end
 
-  desc "Reports `uptime` status"
-  pattern :uptime do |loom, facts|
-    loom << :uptime
-    loom << :hostname
-    loom.local << :hostname
+desc "cd's to the /etc directory and runs `pwd`"
+pattern :cd do |loom, facts|
+  loom.cd "/etc" do
+    loom << :pwd
+  end
+end
+
+desc "Tests a condition."
+pattern :test do |loom, facts|
+  unless loom.test :false
+    loom.x :echo, "i tested false"
   end
 
-  desc "cd's to the /etc directory and runs `pwd`"
-  pattern :cd do |loom, facts|
-    loom.cd "/etc" do
-      loom << :pwd
-    end
+  if loom.test :true
+    loom.x :echo, "i tested true"
   end
 
-  desc "Tests a condition."
-  pattern :test do |loom, facts|
-    unless loom.test :false
-      loom << "echo i tested false"
-    end
+  if loom.test :which, "bash"
+    loom.x :echo, "has bash"
+  end
+end
 
-    if loom.test :true
-      loom << "echo i tested true"
-    end
-
-    if loom.test :which, "bash"
-      loom << "echo has bash"
-    end
+desc "Tests a grep condition."
+pattern :match do |loom, facts|
+  if loom.files("/etc/hosts").match? :pattern => "aldsfja;ldjf"
+    loom.fail "should not match garbage"
+  else
+    loom.x :echo, "I didnt match garbage"
   end
 
-  desc "Tests a match condition."
-  pattern :match do |loom, facts|
-    if loom.files("/etc/hosts").match? :pattern => "aldsfja;ldjf"
-      raise "should not match garbage"
-    else
-      loom << "echo I didnt match garbage"
-    end
-
-    unless loom.files("/etc/hosts").match? :pattern => "localhost"
-      raise "should match localhost"
-    else
-      loom << "echo I did match my target"
-    end
+  unless loom.files("/etc/hosts").match? :pattern => "localhost"
+    loom.fail "should match localhost"
+  else
+    loom.x echo, "I did match my target"
   end
+end
 
-  desc "Always fails due to return code."
-  pattern :fail_soft do |loom, facts|
-    unless loom << :false
-      loom << "echo i am false"
-    end
+desc "Always fails due to return code."
+pattern :fail_soft do |loom, facts|
+  unless loom << :false
+    loom.x :echo, "i am false"
   end
+end
 
-  desc "Always fails due to a hard failure"
-  pattern :fail_hard do |loom, facts|
-    loom.fail "Fail big or not at all"
+desc "Always fails due to a hard failure"
+pattern :fail_hard do |loom, facts|
+  loom.fail "Fail big or not at all"
+end
+
+desc "Check timeout commands"
+pattern :timeout_fail do |loom, facts|
+  loom.timeout(:timeout => 1) do
+    loom.x :sleep, 2
   end
+end
 
-  desc "Check timeout commands"
-  pattern :timeout_fail do |loom, facts|
-    loom.timeout(:timeout => 1) do
-      loom << "sleep 2"
-    end
-  end
-
-  desc "Wrapped time commands"
-  pattern :time do |loom, facts|
-    loom.time do
-      loom << "echo hi"
-      loom << "sleep 2"
-    end
+desc "Wrapped time commands"
+pattern :time do |loom, facts|
+  loom.time do
+    loom.x :echo, :hi
+    loom.x :sleep, 2
   end
 end
 
@@ -87,14 +83,14 @@ module Net
   desc "tests the net package, with_net check"
   pattern :check_net do |loom, facts|
     unless loom.net(check_host: '127.0.0.1').has_net?
-      raise 'can not ping localhost'
+      loom.fail 'can not ping localhost'
     end
 
     has_local_net = false
     loom.net(check_host: '127.0.0.1').with_net do
       has_local_net = true
     end
-    raise "should have local net" unless has_local_net
+    loom.fail "should have local net" unless has_local_net
 
   end
 
@@ -133,13 +129,13 @@ EOS
 
     loom.sudo do
       loom.files("/tmp/chown.me").chown user: :root
-      puts loom << "ls -lZ /tmp/chown.me"
+      puts loom.capture :ls, "-lZ", "/tmp/chown.me"
 
       loom.files("/tmp/chown.me").chown user: :root, group: :root
     end
-    puts loom << "ls -lZ /tmp/chown.me"
+    puts loom.capture :ls, "-lZ", "/tmp/chown.me"
 
-    loom.sudo { loom << "rm /tmp/chown.me" }
+    loom.sudo { loom.exec :rm, "/tmp/chown.me" }
   end
 end
 
@@ -158,23 +154,25 @@ module Shell
   desc "Tests a bunch of nested sudo scenarios"
   pattern :sudo do |loom, facts|
     loom.sudo user: "root" do
-      loom << "pwd"
+      loom << :pwd
       loom << :whoami
-      loom << "touch loom.file"
+      loom.exec :touch, "loom.file"
 
       loom.sudo do
         loom << :whoami
-        loom << "pwd"
-        loom << "touch root.file"
+        loom << :pwd
+        loom.x :touch, "root.file"
 
         loom.user.add_system_user :postgres, uid: 999
         loom.sudo user: :postgres do
           loom << :whoami
-          loom << "cd /tmp; touch postgres.file"
+          loom.cd "/tmp" do
+            loom.x :touch, "postgres.file"
+          end
         end
         loom.user.remove :postgres
 
-        loom << "touch root.file2"
+        loom.x :touch, "root.file2"
       end
     end
 
@@ -344,13 +342,13 @@ module VMs
 
   desc "Check if some virtualbox vms exist"
   pattern :vm_exists? do |loom, facts|
-    vm0_exists = loom.vbox.check_exists "vm0.local"
+    vm0_exists = loom.local.vbox.check_exists "vm0.local"
     puts "Virtualbox VM 'vm0.local' exists: #{vm0_exists}"
   end
 
   desc "Takes a snapshot of a VM"
   pattern :snap do |loom, facts|
-    loom.vbox.snapshot "vm0.local", snapshot_name: "test:snap"
-    loom.vbox.snapshot "vm0.local", action: :delete, snapshot_name: "test:snap"
+    loom.local.vbox.snapshot "vm0.local", snapshot_name: "test:snap"
+    loom.local.vbox.snapshot "vm0.local", action: :delete, snapshot_name: "test:snap"
   end
 end

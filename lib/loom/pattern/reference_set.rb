@@ -54,7 +54,7 @@ module Loom::Pattern
         def create(ruby_code, source)
           shell_module = Module.new
           shell_module.include Loom::Pattern
-          shell_module.module_eval ruby_code
+          shell_module.module_eval ruby_code, source, 1
           shell_module.namespace ""
 
           self.new(shell_module, source).build

@@ -9,7 +9,7 @@ module LoomExt::CoreMods
   # loom.x.cd
   #
   class Exec < Loom::Mods::Module
-    register_mod :exec, :alias => :<< do |*cmd|
+    register_mod :exec, :alias => [:x, :<<] do |*cmd|
       shell.execute *cmd
     end
   end
