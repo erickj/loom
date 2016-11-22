@@ -12,7 +12,7 @@ module LoomExt::CoreMods
     LOOM_SUDOERS_FILE = SUDOERS_DIR + "/90-loom-sudoers"
 
     def user_exists?(user)
-      shell.test :getent, "passwd #{user}"
+      shell.test :getent, :passwd, user
     end
 
     def includes_sudoers?
@@ -41,12 +41,12 @@ module LoomExt::CoreMods
         end
 
         flags = []
-        flags << "--home-dir %s" % home_dir if home_dir
-        flags << "--create-home" if home_dir
-        flags << "--shell %s" % login_shell if login_shell
-        flags << "--uid %s" % uid if uid
-        flags << "--gid %s" % gid if gid
-        flags << "--groups %s" % groups.join(" ") unless groups.empty?
+        flags << ["--home-dir", home_dir] if home_dir
+        flags << ["--create-home"] if home_dir
+        flags << ["--shell", login_shell] if login_shell
+        flags << ["--uid", uid] if uid
+        flags << ["--gid", gid] if gid
+        flags << ["--groups", groups] unless groups.empty?
         flags << "--system" if is_system_user
 
         loom.exec :useradd, flags, user

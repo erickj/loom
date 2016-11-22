@@ -73,7 +73,7 @@ module Loom::Shell
 
     def sudo(user=nil, *sudo_cmd, &block)
       user ||= :root
-      Loom.log.debug1(self) { "sudo => #{user} #{cmd} #{block}" }
+      Loom.log.debug1(self) { "sudo => #{user} #{sudo_cmd} #{block}" }
 
       is_new_sudoer = @sudo_users.last.to_sym != user.to_sym rescue true
 
@@ -100,6 +100,7 @@ module Loom::Shell
 
     def capture(*cmd_parts)
       if @dry_run
+        # TODO: I'm not sure what to do about this.
         Loom.log.warn "`capture` during dry run won't do what you want"
       end
       execute *cmd_parts
@@ -113,13 +114,12 @@ module Loom::Shell
       result = if @dry_run
                  wrap :printf, :first => true do
                    cmd_result = execute_internal *cmd_parts
-                   Loom.log.warn do
+                   Loom.log.info do
                      "\t%s" % prompt_fmt(cmd_result.full_stdout.strip)
                    end
                    cmd_result
                  end
                else
-                 Loom.log.debug { "exec => #{Shellwords.join cmd_parts}" }
                  execute_internal *cmd_parts
                end
       @session << CmdResult.create_from_sshkit_command(result, is_test)
@@ -143,6 +143,8 @@ module Loom::Shell
 
     def execute_internal(*cmd_parts)
       cmd = create_command cmd_parts
+      Loom.log.debug1(self) { "executing => #{cmd}" }
+
       # This is a big hack to get access to the SSHKit command
       # object and avoid the automatic errors thrown on non-zero
       # error codes
@@ -172,7 +174,7 @@ module Loom::Shell
       end
 #      cmd = cmd.escape_cmd if cmd.respond_to? :escape_cmd
 
-      cmd = "cd #{@sudo_dir}; " << cmd if @sudo_dir && !@dry_run
+      cmd = "cd #{@sudo_dir}; " << cmd.to_s if @sudo_dir && !@dry_run
       cmd
     end
 

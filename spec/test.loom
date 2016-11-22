@@ -151,7 +151,7 @@ module Shell
     #    loom.local << "(sudo -i -u root whoami)"
   end
 
-  desc "Tests a bunch of nested sudo scenarios"
+  desc "Tests nested sudo scenarios"
   pattern :sudo do |loom, facts|
     loom.sudo user: "root" do
       loom << :pwd
@@ -167,6 +167,7 @@ module Shell
         loom.sudo user: :postgres do
           loom << :whoami
           loom.cd "/tmp" do
+            loom << :pwd
             loom.x :touch, "postgres.file"
           end
         end

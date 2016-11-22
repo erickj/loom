@@ -5,14 +5,12 @@ module Loom::Shell
   # Escapes shell commands, use with `CmdWrapper.new :echo, '"I'm some text"'`
   class CmdWrapper
 
-    ESCAPE_CHARS = "\"'*!"
-
     class << self
       def escape(cmd)
         if cmd.is_a? CmdWrapper
           cmd.escape_cmd
         else
-          Shellwords.escape cmd
+          Shellwords.escape(cmd)
         end
       end
 
@@ -41,13 +39,18 @@ module Loom::Shell
       escaped_parts = @cmd_parts.map do |part|
         CmdWrapper.escape part
       end
-      joined = escaped_parts.join " "
 
+      # Don't fuck with this unless you really want to fix it.
       if @should_quote && @is_wrapped
-        joined = joined.gsub /([#{ESCAPE_CHARS}])/, "\\\""
-        "\"#{joined}\""
+        inner_escaped = Shellwords.join(escaped_parts)
+
+        # Shellwords escapes spaces, but I'm wrapping this string in another set
+        # of quotes here, so it's unnecessary.
+        inner_escaped.gsub!(/\\(\s)/, "\\1") while inner_escaped.match(/\\\s/)
+
+        "\"#{inner_escaped}\""
       else
-        joined
+        escaped_parts.join " "
       end
     end
     alias_method :to_s, :escape_cmd

@@ -7,6 +7,11 @@ describe Loom::Shell::CmdWrapper do
       cmd = Loom::Shell::CmdWrapper.new :echo, "-n", "\"all the rest\""
       expect(cmd.escape_cmd).to eql "echo -n \\\"all\\ the\\ rest\\\""
     end
+
+    it "flattens cmd input" do
+      cmd = Loom::Shell::CmdWrapper.new :somecmd, ["-f", "file.txt"], [:a, [:b]]
+      expect(cmd.to_s).to eql "somecmd -f file.txt a b"
+    end
   end
 
   context "#escape" do
@@ -48,16 +53,34 @@ describe Loom::Shell::CmdWrapper do
     end
   end
 
+  # I don't want to think about this shit anymore. Don't touch this unless its
+  # broken.
   context "#wrap" do
-    it "preserves escaped CmdWrappers" do
+    it "preserves escaped CmdWrappers: depth 2" do
       cmd_which = Loom::Shell::CmdWrapper.new :which, :ls
       cmd_sh = Loom::Shell::CmdWrapper.new :"/bin/sh", "-c", should_quote: true
 
       composed_cmd = cmd_sh.wrap(cmd_sh.wrap(cmd_which)).to_s
 
       expected = "/bin/sh -c \"/bin/sh -c \\\"which ls\\\"\""
+
       expect(composed_cmd).to eql expected
-      expect(%x{#{composed_cmd}}.strip).to eql "/usr/bin/ls"
+      # Matches /bin/ls$ for portability, on fedora it's /usr/bin/ls
+      expect(%x{#{composed_cmd}}.strip).to match /\/bin\/ls$/
+    end
+
+    it "preserves escaped CmdWrappers: depth N" do
+      cmd_which = Loom::Shell::CmdWrapper.new :which, :ls
+      cmd_sh = Loom::Shell::CmdWrapper.new :"/bin/sh", "-c", should_quote: true
+
+      composed_cmd = cmd_sh.wrap(cmd_sh.wrap(cmd_sh.wrap(cmd_which))).to_s
+
+      expected =
+        "/bin/sh -c \"/bin/sh -c \\\"/bin/sh -c \\\\\\\"which ls\\\\\\\"\\\"\""
+
+      expect(composed_cmd).to eql expected
+      # Matches /bin/ls$ for portability, on fedora it's /usr/bin/ls
+      expect(%x{#{composed_cmd}}.strip).to match /\/bin\/ls$/
     end
   end
 end
