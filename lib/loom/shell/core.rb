@@ -16,7 +16,10 @@ module Loom::Shell
 
       @cmd_wrappers = []
       @sudo_users = []
-      @sudo_dir = nil
+
+      # TODO: @sudo_dirs is a smelly workaround for not having a better
+      # understanding of sudo security policies and inheriting environments.
+      @sudo_dirs = []
     end
 
     attr_reader :session, :shell_api, :mod_loader, :dry_run
@@ -77,7 +80,7 @@ module Loom::Shell
 
       is_new_sudoer = @sudo_users.last.to_sym != user.to_sym rescue true
 
-      @sudo_dir = capture :pwd
+      @sudo_dirs.push(capture :pwd)
       @sudo_users.push << user if is_new_sudoer
 
       sudo_wrapper = [:sudo, "-u", user, "--", "/bin/sh", "-c"]
@@ -89,13 +92,22 @@ module Loom::Shell
         end
       ensure
         @sudo_users.pop if is_new_sudoer
-        @sudo_dir = nil
+        @sudo_dirs.pop
       end
     end
 
     def cd(path, &block)
       Loom.log.debug1(self) { "cd => #{path} #{block}" }
-      @sshkit_backend.within path, &block
+
+      # TODO: this might creates problems with relative paths, e.g.
+      # loom.cd foo => cd ./foo
+      # loom.sudo user => cd ./foo; sudo user
+      @sudo_dirs.push path
+      begin
+        @sshkit_backend.within path, &block
+      ensure
+        @sudo_dirs.pop
+      end
     end
 
     def capture(*cmd_parts)
@@ -172,9 +184,10 @@ module Loom::Shell
       cmd = @cmd_wrappers.reverse.reduce(cmd_wrapper) do |cmd_or_wrapper, wrapper|
         wrapper.wrap cmd_or_wrapper
       end
-#      cmd = cmd.escape_cmd if cmd.respond_to? :escape_cmd
 
-      cmd = "cd #{@sudo_dir}; " << cmd.to_s if @sudo_dir && !@dry_run
+      unless @sudo_dirs.empty? || @dry_run
+        cmd = "cd #{@sudo_dirs.last}; " << cmd.to_s
+      end
       cmd
     end
 
