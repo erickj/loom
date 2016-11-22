@@ -83,4 +83,104 @@ describe Loom::Shell::CmdWrapper do
       expect(%x{#{composed_cmd}}.strip).to match /\/bin\/ls$/
     end
   end
+
+  context Loom::Shell::CmdRedirect do
+
+    let(:cmd_parts) { [:"/bin/ls"] }
+
+    it "redirects stdout to file" do
+      redirect = Loom::Shell::CmdRedirect.new "/my/file"
+      cmd = Loom::Shell::CmdWrapper.new *cmd_parts, redirect: redirect
+
+      expect(cmd.to_s).to eql "/bin/ls >/my/file"
+    end
+
+    it "redirects stderr to file" do
+      redirect = Loom::Shell::CmdRedirect.new "/my/file", fd: 2
+      cmd = Loom::Shell::CmdWrapper.new *cmd_parts, redirect: redirect
+
+      expect(cmd.to_s).to eql "/bin/ls 2>/my/file"
+    end
+
+    it "appends stdout to file" do
+      mode = Loom::Shell::CmdRedirect::Mode::APPEND
+
+      redirect = Loom::Shell::CmdRedirect.new "/my/file", mode: mode
+      cmd = Loom::Shell::CmdWrapper.new *cmd_parts, redirect: redirect
+
+      expect(cmd.to_s).to eql "/bin/ls >>/my/file"
+    end
+
+    it "appends stderr to file" do
+      mode = Loom::Shell::CmdRedirect::Mode::APPEND
+
+      redirect = Loom::Shell::CmdRedirect.new "/my/file", fd: 2, mode: mode
+      cmd = Loom::Shell::CmdWrapper.new *cmd_parts, redirect: redirect
+
+      expect(cmd.to_s).to eql "/bin/ls 2>>/my/file"
+    end
+
+    it "redirects stderr to stdout" do
+      redirect = Loom::Shell::CmdRedirect.new 1, fd: 2
+      cmd = Loom::Shell::CmdWrapper.new *cmd_parts, redirect: redirect
+
+      expect(cmd.to_s).to eql "/bin/ls 2>1"
+    end
+
+    it "redirects both stderr and stdout to file" do
+      mode = Loom::Shell::CmdRedirect::Mode::OUTPUT_12
+
+      redirect = Loom::Shell::CmdRedirect.new "/my/file", mode: mode
+      cmd = Loom::Shell::CmdWrapper.new *cmd_parts, redirect: redirect
+
+      expect(cmd.to_s).to eql "/bin/ls &>/my/file"
+    end
+
+    context "helper factories" do
+
+      it "appends to stdout" do
+        redirect = Loom::Shell::CmdRedirect.append_stdout "/my/file"
+        cmd = Loom::Shell::CmdWrapper.new *cmd_parts, redirect: redirect
+
+        expect(cmd.to_s).to eql "/bin/ls >>/my/file"
+      end
+    end
+
+    context "multiple redirects" do
+      it "redirects both stderr and stdout to file" do
+
+        redirects = [
+          Loom::Shell::CmdRedirect.new("/my/file"),
+          Loom::Shell::CmdRedirect.new(1, fd: 2)
+        ]
+        cmd = Loom::Shell::CmdWrapper.new *cmd_parts, redirect: redirects
+
+        expect(cmd.to_s).to eql "/bin/ls >/my/file 2>1"
+      end
+    end
+  end
+
+  context Loom::Shell::CmdPipeline do
+
+    let(:cmds) do
+      [
+        Loom::Shell::CmdWrapper.new(:find, ".", "-name", "*foo", "-print0"),
+        Loom::Shell::CmdWrapper.new(:xargs, "-0", "-I-", "ls", "-")
+      ]
+    end
+
+    it "pipes commands together" do
+      pipeline = Loom::Shell::CmdPipeline.new cmds
+
+      expected = "find . -name \\*foo -print0 | xargs -0 -I- ls -"
+      expect(pipeline.to_s).to eql expected
+    end
+
+    it "accepts commands as pre-escaped strings" do
+      pipeline = Loom::Shell::CmdPipeline.new ["I'm already escaped", "me too!"]
+
+      expected = "I'm already escaped | me too!"
+      expect(pipeline.to_s).to eql expected
+    end
+  end
 end

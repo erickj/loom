@@ -59,7 +59,7 @@ module LoomExt::CoreMods
           contents = shell.capture :cat, p
           if contents
             contents.gsub!(pattern, replace, &block) unless pattern.nil?
-            write :text => contents
+            write contents
           end
         end
       end
@@ -80,20 +80,24 @@ module LoomExt::CoreMods
         each_path :action => :mkdir, :flags => flags
       end
 
-      def append(text: "")
+      def append(text="")
         text.gsub! "\n", "\\n"
 
         each_path do |p|
-          shell.verify "[ -f #{p} ]"
-          shell.exec :"/bin/echo", "-e", "'#{text}'", ">>", p
+          loom.test "[ -f #{p} ]"
+
+          redirect = Loom::Shell::CmdRedirect.append_stdout p
+          cmd = Loom::Shell::CmdWrapper.new(
+            :"/bin/echo", "-e", text, redirect: redirect)
+          shell.execute cmd
         end
       end
 
-      def write(text: "")
+      def write(text="")
         text.gsub! "\n", "\\n"
 
         each_path do |p|
-          shell.exec :"/bin/echo", "-e", "'#{text}'", "|", :tee, p
+          loom.x :"/bin/echo", "-e", text, :piped_cmds => [[:tee, p]]
         end
       end
 

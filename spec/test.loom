@@ -118,7 +118,7 @@ module Files
 
   desc "Gsubs file text"
   pattern :gsub do |loom, facts|
-    loom.files("/tmp/garbage").write text: <<EOS
+    loom.files("/tmp/garbage").write <<EOS
 This is a bunch of junk
 192.123.456.0\t\thostname.xyz
 EOS
@@ -126,6 +126,7 @@ EOS
     loom.files("/tmp/garbage")
       .cat
       .gsub(pattern: /[\d]{3}/, replace: "xxx")
+      .append("this is something new")
       .cat
   end
 
@@ -133,15 +134,14 @@ EOS
   pattern :chown do |loom, facts|
     loom.files("/tmp/chown.me")
       .touch
-      .append(text: "this file will be owned by root")
+      .append("this file will be owned by root")
 
     loom.sudo do
       loom.files("/tmp/chown.me").chown user: :root
-      puts loom.capture :ls, "-lZ", "/tmp/chown.me"
+      loom.x :ls, "-lZ", "/tmp/chown.me"
 
       loom.files("/tmp/chown.me").chown user: :root, group: :root
     end
-    puts loom.capture :ls, "-lZ", "/tmp/chown.me"
 
     loom.sudo { loom.exec :rm, "/tmp/chown.me" }
   end

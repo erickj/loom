@@ -6,11 +6,9 @@ module LoomExt::CoreMods
   # Executes shell commands from patterns. e.g.
   #
   # loom << :echo, "hello there"
-  # loom.x.cd
-  #
   class Exec < Loom::Mods::Module
-    register_mod :exec, :alias => [:x, :<<] do |*cmd|
-      shell.execute *cmd
+    register_mod :exec, :alias => [:x, :<<] do |*cmd, **opts|
+      shell.execute *cmd, **opts
     end
   end
 

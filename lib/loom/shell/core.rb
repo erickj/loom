@@ -119,25 +119,31 @@ module Loom::Shell
       @session.last.stdout.strip
     end
 
-    def execute(*cmd_parts, is_test: false)
+    def pipe(*cmds)
+      cmd = CmdWrapper.pipe *cmds.map { |*cmd| CmdWrapper.new *cmd }
+      execute cmd
+    end
+
+    def execute(*cmd_parts, is_test: false, **cmd_opts)
       cmd_parts.compact!
       raise "empty command passed to execute" if cmd_parts.empty?
 
       result = if @dry_run
                  wrap :printf, :first => true do
-                   cmd_result = execute_internal *cmd_parts
+                   cmd_result = execute_internal *cmd_parts, **cmd_opts
                    Loom.log.info do
                      "\t%s" % prompt_fmt(cmd_result.full_stdout.strip)
                    end
                    cmd_result
                  end
                else
-                 execute_internal *cmd_parts
+                 execute_internal *cmd_parts, **cmd_opts
                end
-      @session << CmdResult.create_from_sshkit_command(result, is_test)
+      @session << CmdResult.create_from_sshkit_command(result, is_test, self)
 
       Loom.log.debug @session.last.stdout unless @session.last.stdout.empty?
       Loom.log.debug @session.last.stderr unless @session.last.stderr.empty?
+      @session.last
     end
     alias_method :exec, :execute
 
@@ -153,8 +159,19 @@ module Loom::Shell
       "[%s]:$ %s" % [prompt_label, output]
     end
 
-    def execute_internal(*cmd_parts)
-      cmd = create_command cmd_parts
+    def execute_internal(*cmd_parts, piped_cmds: [])
+      primary_cmd = create_command *cmd_parts
+      piped_cmds = piped_cmds.map { |cmd_parts| CmdWrapper.new *cmd_parts }
+
+      cmd = CmdPipeline.new([primary_cmd].concat(piped_cmds)).to_s
+      # Tests if the command looks like "echo\ hi", the trailing slash after
+      # echo indicates that just 1 big string was passed in and we can't really
+      # isolate the execuatable part of the command. This might be fine, but
+      # it's better to be strict now and relax this later if it's OK.
+      if cmd.match /^[\w\-\[]+\\/i
+        raise "use array parts for command escaping => #{cmd}"
+      end
+
       Loom.log.debug1(self) { "executing => #{cmd}" }
 
       # This is a big hack to get access to the SSHKit command
@@ -167,16 +184,13 @@ module Loom::Shell
     end
 
     # Here be dragons.
+    # @return [String|Loom::Shell::CmdWrapper]
     def create_command(*cmd_parts)
-      cmd_wrapper = CmdWrapper.new *cmd_parts
-
-      # Tests if the command looks like "echo\ hi", the trailing slash after
-      # echo indicates that just 1 big string was passed in and we can't really
-      # isolate the execuatable part of the command. This might be fine, but
-      # it's better to be strict now and relax this later if it's OK.
-      if cmd_wrapper.to_s.match /^[\w\-\[]+\\/i
-        raise "use array parts for command escaping => #{cmd_wrapper}"
-      end
+      cmd_wrapper = if cmd_parts.is_a? CmdWrapper
+                      cmd_parts
+                    else
+                      CmdWrapper.new *cmd_parts
+                    end
 
       # Useful for sudo, dry runs, timing a set of commands, or
       # timeout... anytime you want to prefix a group of commands.  Reverses the
