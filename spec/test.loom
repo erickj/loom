@@ -20,6 +20,15 @@ pattern :cd do |loom, facts|
   end
 end
 
+desc "tests return codes from wrapped commands"
+pattern :wrap_returns do |loom, facts|
+  # using loom.time as a proxy for Shell::Core#wrap here
+  loom.time do
+    raise "wrapped true is not true" unless loom.test :true
+    raise "wrapped false is not false" if loom.test :false
+  end
+end
+
 desc "Tests a condition."
 pattern :test do |loom, facts|
   unless loom.test :false
@@ -46,7 +55,7 @@ pattern :match do |loom, facts|
   unless loom.files("/etc/hosts").match? :pattern => "localhost"
     loom.fail "should match localhost"
   else
-    loom.x echo, "I did match my target"
+    loom.x :echo, "I did match my target"
   end
 end
 
@@ -91,7 +100,6 @@ module Net
       has_local_net = true
     end
     loom.fail "should have local net" unless has_local_net
-
   end
 
   desc "expected check_net failures"

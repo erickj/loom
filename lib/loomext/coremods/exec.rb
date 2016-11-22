@@ -22,13 +22,13 @@ module LoomExt::CoreMods
 
   class Timeout < Loom::Mods::Module
     register_mod :timeout do |timeout: 60, &block|
-      shell.wrap("timeout #{timeout}", :should_quote => false, &block)
+      shell.wrap(:timeout, timeout, :should_quote => false, &block)
     end
   end
 
   class Time < Loom::Mods::Module
     register_mod :time do |&block|
-      shell.wrap("time", :should_quote => false, &block)
+      shell.wrap(:time, :should_quote => false, &block)
     end
   end
 
