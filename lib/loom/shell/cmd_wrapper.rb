@@ -6,6 +6,9 @@ module Loom::Shell
   class CmdWrapper
 
     class << self
+      # Escapes a shell command.
+      # @param cmd [CmdWrapper|String]
+      # @return [String]
       def escape(cmd)
         if cmd.is_a? CmdWrapper
           cmd.escape_cmd
@@ -14,7 +17,17 @@ module Loom::Shell
         end
       end
 
-      def wrapped_cmd(*cmd_parts, should_quote: false)
+      # Wraps a command in another command. See `CmdWrapper.new'
+      # @param cmd_parts [CmdWrapper|String|Symbol]
+      # @param should_quote [Boolean]
+      def wrap_cmd(*cmd_parts, should_quote: false)
+        cmd_parts = cmd_parts.map do |parts|
+          if parts.respond_to? :cmd_parts
+            parts.cmd_parts
+          else
+            parts
+          end
+        end
         CmdWrapper.new *cmd_parts.flatten, {
           :should_quote => should_quote,
           :is_wrapped => true
@@ -23,13 +36,15 @@ module Loom::Shell
     end
 
     # @param cmd [Array<[#to_s]>] Command parts that will be shell escaped.
-    # @param :should_quote [Boolean] Whether wrapped commands should be wrapped
+    # @param :should_quote [Boolean] Whether wrapped commands should be quoted.
+    # @param :redirc [Array<CmdRedirect>] STDIO redirection for the command
     # in quotes.
     def initialize(*cmd, should_quote: false, is_wrapped: false, redirect: [])
       @cmd_parts = cmd.flatten
       @should_quote = should_quote
       @is_wrapped = is_wrapped
       @redirects = [redirect].flatten.compact
+      Loom.log.debug2(self) { "CmdWrapper.new {#{cmd}} => #{self.escape_cmd}" }
     end
 
     attr_reader :cmd_parts
@@ -48,27 +63,43 @@ module Loom::Shell
     # @return [Array<#to_s>] The `wrapped_cmd` wrapped by `#escape_cmd`
     def wrap(*wrapped_cmd)
       wrapped_cmd =
-        CmdWrapper.wrapped_cmd(*wrapped_cmd, should_quote: @should_quote)
+        CmdWrapper.wrap_cmd(*wrapped_cmd, should_quote: @should_quote)
       CmdWrapper.new(self, wrapped_cmd)
     end
 
     private
     def escape_inner
-      escaped_parts = @cmd_parts.map do |part|
-        CmdWrapper.escape part
-      end
+      escaped_parts = escape_parts(@cmd_parts)
 
       # Don't fuck with this unless you really want to fix it.
       if @should_quote && @is_wrapped
-        inner_escaped = Shellwords.join(escaped_parts)
+        double_escaped = escape_parts(escaped_parts).join " "
 
         # Shellwords escapes spaces, but I'm wrapping this string in another set
         # of quotes here, so it's unnecessary.
-        inner_escaped.gsub!(/\\(\s)/, "\\1") while inner_escaped.match(/\\\s/)
+        double_escaped.gsub!(/\\(\s)/, "\\1") while double_escaped.match(/\\\s/)
 
-        "\"#{inner_escaped}\""
+        "\"#{double_escaped}\""
       else
         escaped_parts.join " "
+      end
+    end
+
+    # Maps each entry of #{cmd_parts} to the escaped form of itself, except if
+    # the part is frozen (like a Symbol)
+    # @param cmd_parts [Array<String|Symbol|CmdWrapper>]
+    # @return [Array<String|Symbol>]
+    def escape_parts(cmd_parts)
+      cmd_parts.map do |part|
+        part.cmd_parts rescue part
+      end.flatten
+
+      cmd_parts.map do |part|
+        unless part.frozen?
+          CmdWrapper.escape part
+        else
+          part
+        end
       end
     end
   end

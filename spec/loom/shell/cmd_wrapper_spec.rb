@@ -1,6 +1,11 @@
 require "loom/shell"
+require "yaml"
 
 describe Loom::Shell::CmdWrapper do
+
+  def unescape_cmd(cmd)
+    YAML.load(%Q(---\n"#{cmd.to_s}"\n))
+  end
 
   context ".new" do
     it "does not escape whitespace between joined commands parts" do
@@ -14,28 +19,10 @@ describe Loom::Shell::CmdWrapper do
     end
   end
 
-  context "#escape" do
-
-    it "escapes strings with quotes" do
-      cmd = '"hi"'
-      expected = '\"hi\"'
-      expect(Loom::Shell::CmdWrapper.escape cmd).to eql expected
-      expect(%x{printf #{expected}}.strip).to eql cmd
-    end
-
-    it "ignores strings without quotes" do
-      cmd = 'hi'
-      expected = 'hi'
-      expect(Loom::Shell::CmdWrapper.escape cmd).to eql expected
-      expect(%x{printf #{expected}}.strip).to eql cmd
-    end
-
-    it "escapes nested quotes" do
-      cmd = 'echo "hi"'
-      expected = 'echo\\ \"hi\"'
-
-      expect(Loom::Shell::CmdWrapper.escape cmd).to eql expected
-      expect(%x{printf #{expected}}.strip).to eql cmd
+  context ".escape" do
+    it "escapes CmdWrappers" do
+      cmd = Loom::Shell::CmdWrapper.new '"hi"'
+      expect(Loom::Shell::CmdWrapper.escape cmd).to eql cmd.to_s
     end
 
     it "escapes recursively" do
@@ -50,6 +37,48 @@ describe Loom::Shell::CmdWrapper do
 
       expect(cmd_outer).to eql expected
       expect(%x{printf #{cmd_outer}}.strip).to eql printf_expected
+    end
+  end
+
+  context "#escape" do
+    it "escapes strings with quotes" do
+      cmd = Loom::Shell::CmdWrapper.new '"hi"'
+
+      expected = '\"hi\"'
+      expect(cmd.escape_cmd).to eql expected
+      expect(%x{printf #{expected}}.strip).to eql unescape_cmd(cmd)
+    end
+
+    it "ignores strings without quotes" do
+      cmd = Loom::Shell::CmdWrapper.new 'hi'
+
+      expected = 'hi'
+      expect(cmd.escape_cmd).to eql expected
+      expect(%x{printf #{expected}}.strip).to eql unescape_cmd(cmd)
+    end
+
+    it "escapes nested quotes" do
+      cmd = Loom::Shell::CmdWrapper.new 'echo "hi"'
+
+      expected = 'echo\\ \"hi\"'
+      expect(cmd.escape_cmd).to eql expected
+      expect(%x{printf #{expected}}.strip).to eql unescape_cmd(cmd)
+    end
+
+    it "respects frozen? string" do
+      cmd = Loom::Shell::CmdWrapper.new :echo, "\"^FROZEN^\"".freeze
+
+      expected = 'echo "^FROZEN^"'
+      expect(cmd.escape_cmd).to eql expected
+    end
+
+    it "respects wrapped frozen? strings" do
+      cmd_inner = Loom::Shell::CmdWrapper.new :echo, "\"^#FROZEN^\"".freeze
+      cmd_sh = Loom::Shell::CmdWrapper.wrap_cmd :"/bin/sh", cmd_inner
+      cmd = Loom::Shell::CmdWrapper.wrap_cmd :sudo, cmd_sh
+
+      expected = 'sudo /bin/sh echo "^#FROZEN^"'
+      expect(cmd.escape_cmd).to eql expected
     end
   end
 
