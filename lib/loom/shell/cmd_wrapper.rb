@@ -2,7 +2,6 @@ require "shellwords"
 
 module Loom::Shell
 
-  # Escapes shell commands, use with `CmdWrapper.new :echo, '"I'm some text"'`
   class CmdWrapper
 
     class << self

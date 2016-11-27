@@ -189,6 +189,7 @@ module Loom::Shell
       cmd_wrapper = if cmd_parts.is_a? CmdWrapper
                       cmd_parts
                     else
+                      Loom.log.debug3(self) { "new cmd from parts => #{cmd_parts}" }
                       CmdWrapper.new *cmd_parts
                     end
 
@@ -196,6 +197,7 @@ module Loom::Shell
       # timeout... anytime you want to prefix a group of commands.  Reverses the
       # array to wrap from inner most call to `#{wrap}` to outer most.
       cmd = @cmd_wrappers.reverse.reduce(cmd_wrapper) do |cmd_or_wrapper, wrapper|
+        Loom.log.debug3(self) { "wrapping cmds => #{wrapper} => #{cmd_or_wrapper}"}
         wrapper.wrap cmd_or_wrapper
       end
 

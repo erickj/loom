@@ -7,6 +7,18 @@ describe Loom::Shell::CmdWrapper do
     YAML.load(%Q(---\n"#{cmd.to_s}"\n))
   end
 
+  context "examples" do
+    it "escapes spaces" do
+      cmd = Loom::Shell::CmdWrapper.new :printf, "print out this string"
+      expect(%x{#{cmd}}).to eql "print out this string"
+    end
+
+    it "skips escaping symbols and frozen string" do
+      cmd = Loom::Shell::CmdWrapper.new :"/bin/echo", :"\"yy\"", "\"xx\""
+      expect(%x{#{cmd}}.strip).to eql "yy \"xx\""
+    end
+  end
+
   context ".new" do
     it "does not escape whitespace between joined commands parts" do
       cmd = Loom::Shell::CmdWrapper.new :echo, "-n", "\"all the rest\""
@@ -66,18 +78,17 @@ describe Loom::Shell::CmdWrapper do
     end
 
     it "respects frozen? string" do
-      cmd = Loom::Shell::CmdWrapper.new :echo, "\"^FROZEN^\"".freeze
+      cmd = Loom::Shell::CmdWrapper.new :echo, "\"^FROZEN^\"".freeze, :"^", "^"
 
-      expected = 'echo "^FROZEN^"'
+      expected = 'echo "^FROZEN^" ^ \^'
       expect(cmd.escape_cmd).to eql expected
     end
 
     it "respects wrapped frozen? strings" do
       cmd_inner = Loom::Shell::CmdWrapper.new :echo, "\"^#FROZEN^\"".freeze
-      cmd_sh = Loom::Shell::CmdWrapper.wrap_cmd :"/bin/sh", cmd_inner
-      cmd = Loom::Shell::CmdWrapper.wrap_cmd :sudo, cmd_sh
+      cmd = Loom::Shell::CmdWrapper.wrap_cmd :sudo, cmd_inner
 
-      expected = 'sudo /bin/sh echo "^#FROZEN^"'
+      expected = 'sudo echo "^#FROZEN^"'
       expect(cmd.escape_cmd).to eql expected
     end
   end
@@ -185,6 +196,17 @@ describe Loom::Shell::CmdWrapper do
         cmd = Loom::Shell::CmdWrapper.new *cmd_parts, redirect: redirects
 
         expect(cmd.to_s).to eql "/bin/ls >/my/file 2>1"
+      end
+    end
+
+    context "wrapped redirects" do
+      it "does not escape redirects" do
+        r = Loom::Shell::CmdRedirect.append_stdout "/my/file"
+
+        cmd_inner = Loom::Shell::CmdWrapper.new :echo, :hello, redirect: r
+        cmd = Loom::Shell::CmdWrapper.wrap_cmd :sudo, "-u", :root, cmd_inner
+
+        expect(cmd.to_s).to eql "sudo -u root echo hello >>/my/file"
       end
     end
   end

@@ -16,15 +16,11 @@ module LoomExt::CoreMods
     end
 
     def includes_sudoers?
-      shell.test :grep, %Q[-e "^#includedir #{SUDOERS_DIR}$" #{SUDOERS_FILE}]
+      shell.test :grep, :"-e", :"'^#includedir #{SUDOERS_DIR}$'", SUDOERS_FILE
     end
 
     def sudoersd_exists?
       shell.test :test, %Q[-d #{SUDOERS_DIR}]
-    end
-
-    def has_sudoer_conf?(conf)
-      shell.test :grep, %Q[-e "^#{conf}$" #{LOOM_SUDOERS_FILE}]
     end
 
     module Actions
@@ -70,18 +66,14 @@ module LoomExt::CoreMods
         loom.exec :userdel, "-r", user
       end
 
-      def make_sudoer(user, sudoer_conf: nil)
+      def make_sudoer(user)
         raise SudoersDNotIncluded unless includes_sudoers?
         raise SudoersDNoExistError unless sudoersd_exists?
 
-        sudoer_conf ||= "#{user} ALL=(ALL) NOPASSWD:ALL"
-        if has_sudoer_conf? sudoer_conf
-          Loom.log.warn "make_sudoer skipping conf #{sudoer_conf} => conf already exists"
-          return
-        end
+        sudoer_conf = :"#{user} ALL=(ALL) NOPASSWD:ALL"
 
-        loom.exec :echo, %Q["#{sudoer_conf}" >> #{LOOM_SUDOERS_FILE}]
-        loom.exec :chmod, 0440, LOOM_SUDOERS_FILE
+        loom.files(LOOM_SUDOERS_FILE).append sudoer_conf
+        loom.exec :chmod, "0440", LOOM_SUDOERS_FILE
       end
     end
   end

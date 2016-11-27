@@ -81,8 +81,6 @@ module LoomExt::CoreMods
       end
 
       def append(text="")
-        text.gsub! "\n", "\\n"
-
         each_path do |p|
           loom.test "[ -f #{p} ]"
 
@@ -94,8 +92,6 @@ module LoomExt::CoreMods
       end
 
       def write(text="")
-        text.gsub! "\n", "\\n"
-
         each_path do |p|
           loom.x :"/bin/echo", "-e", text, :piped_cmds => [[:tee, p]]
         end
