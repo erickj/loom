@@ -43,6 +43,9 @@ guard :rspec, cmd: "bundle exec rspec" do
   ruby = dsl.ruby
   dsl.watch_spec_files_for(ruby.lib_files)
 
+  # Loom shell scripts
+  watch(%r{^scripts/(.+)\.sh$}) { |m| "spec/scripts/#{m[1]}_spec.rb" }
+
   # Turnip features and steps
   watch(%r{^spec/acceptance/(.+)\.feature$})
   watch(%r{^spec/acceptance/steps/(.+)_steps\.rb$}) do |m|

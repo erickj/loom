@@ -1,3 +1,4 @@
+require_relative "harness_blob"
 require_relative "cmd_result"
 require_relative "cmd_wrapper"
 
