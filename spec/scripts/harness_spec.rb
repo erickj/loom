@@ -287,7 +287,7 @@ echo "I am FOO: ${foo}"
 
 # The ulimit test
 tmp_file=$(mktemp)
-$(
+(
         ulimit -f 0
         echo "this will blow up w/ signal SIGXFSZ" > $tmp_file
 )
@@ -350,6 +350,26 @@ EOS
           expected_output_for_shell = expected_output % "/bin/dash"
           expect(result).to eq expected_output_for_shell
         end
+      end
+    end
+
+    context "return codes" do
+
+      def run(cmd)
+        base64 = run_script :"--print_base64", :stdin => cmd
+        base64_checksum = run_script :"--print_checksum", :stdin => base64
+        run_script :"--run", base64_checksum,
+            "--cmd_shell /bin/dash", :stdin => base64
+      end
+
+      it "returns 0 on success" do
+        run "true"
+        expect($?.exitstatus).to be 0
+      end
+
+      it "returns 'exitcode' on failure" do
+        run "exit 123"
+        expect($?.exitstatus).to be 123
       end
     end
   end
