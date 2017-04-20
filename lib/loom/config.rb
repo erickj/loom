@@ -10,6 +10,9 @@ module Loom
     CONFIG_VARS = {
       :loom_search_paths => ['/etc/loom', File.join(ENV['HOME'], '.loom'), './.loom'],
       :loom_files => ['site.loom'],
+      :loom_user => 'deploy',
+
+      :bootstrap_loom_root => '/opt/loom',
 
       :inventory_all_hosts => false,
       :inventory_hosts => [],
@@ -23,7 +26,7 @@ module Loom
       :run_verbose => false,
 
       :sshkit_execution_strategy => :sequence, # [sequence, parallel, groups]
-      :sshkit_log_level => :warn,
+      :sshkit_log_level => :debug,
     }.freeze
 
     attr_reader *CONFIG_VARS.keys, :config_map

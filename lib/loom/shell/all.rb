@@ -1,5 +1,7 @@
-require_relative "harness_blob"
+require_relative "command_builder"
 require_relative "harness_command_builder"
+
+require_relative "harness_command"
 
 require_relative "cmd_result"
 require_relative "cmd_wrapper"

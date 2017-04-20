@@ -3,7 +3,8 @@ require 'env/development'
 module Loom
 
   LoomError = Class.new ::StandardError
-  ExecutionError = Class.new LoomError
+  PatternExecutionError = Class.new Loom::LoomError
+  FailFastExecutionError = Class.new Loom::LoomError
 
   class << self
     def configure(&block)

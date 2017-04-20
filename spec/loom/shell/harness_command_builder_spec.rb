@@ -6,9 +6,9 @@ cd /tmp
 pwd
 CMD
   end
-  let(:harness_blob) { Loom::Shell::HarnessBlob.new cmd }
+  let(:harness_command) { Loom::Shell::HarnessCommand.new cmd }
 
-  subject { Loom::Shell::HarnessCommandBuilder.new harness_blob }
+  subject { Loom::Shell::HarnessCommandBuilder.new harness_command }
 
   context "#run" do
     it "builds run commands for the harness" do
@@ -16,13 +16,12 @@ CMD
         "./scripts/harness.sh",
         "--run 2>/dev/null",
         "-",
-        harness_blob.checksum,
+        harness_command.checksum,
         "--cmd_shell /bin/dash",
-        "--record_file /opt/loom/commands",
         "<<'[\\w]+'\n"
       ].join " "
 
-      expected_cmd << harness_blob.encoded_script + "\n[\\w]+"
+      expected_cmd << harness_command.encoded_script + "\n[\\w]+"
 
       expect(subject.run_cmd).to match /^#{expected_cmd}/
     end

@@ -1,34 +1,28 @@
 module Loom
   module Shell
 
-    HarnessMissingStdin = Class.new Loom::LoomError
-
-    class HarnessCommandBuilder
-
-      # TODO: Resolve a real script path.
-      SCRIPT = "./scripts/harness.sh"
+    class HarnessCommandBuilder < CommandBuilder
 
       DEFAULT_RUN_OPTS = {
         :cmd_shell => "/bin/dash",
-        :record_file => "/opt/loom/commands"
       }
 
-      def initialize(harness_blob)
-        @harness_blob = harness_blob
+      HARNESS_OP = {
+        :run => "run",
+        :check => "check"
+      }
+
+      def initialize(harness_script)
         @run_opts = DEFAULT_RUN_OPTS.dup
       end
 
       def run_cmd
-        build_cmd :run, @harness_blob.checksum, *hash_to_opts_array(@run_opts),
-                  {
-                    :stdin => @harness_blob.encoded_script
-                  }
+        build_cmd HARNESS_OP[:run], @cmd.checksum, *hash_to_opts_array(@run_opts),
+                  @cmd.encoded_script
       end
 
       def check_cmd
-        build_cmd :check, @harness_blob.checksum, {
-                    :stdin => @harness_blob.encoded_script
-                  }
+        build_cmd HARNESS_OP[:check], @cmd.checksum, @cmd.encoded_script
       end
 
       private
@@ -38,12 +32,15 @@ module Loom
         end
       end
 
-      def build_cmd(cmd, *args, stdin: nil)
-        raise HarnessMissingStdin unless stdin
-
-        heredoc = "<<'HARNESS_EOS'\n#{stdin}\nHARNESS_EOS"
-        cmd = "--" + cmd.to_s
-        "%s %s 2>/dev/null - %s %s" % [SCRIPT, cmd, args.join(" "), heredoc]
+      def build_cmd(harness_op, *args, cmd)
+        heredoc_id = "HARNESS_BASE64_" + Time.now.to_i.to_s
+        heredoc = "<<'#{heredoc_id}'\n#{cmd}\n#{heredoc_id}"
+        "%s --%s 2>/dev/null - %s %s" % [
+          HARNESS,
+          harness_op,
+          args.join(" "),
+          heredoc
+        ]
       end
     end
   end
