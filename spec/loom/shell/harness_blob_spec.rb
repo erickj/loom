@@ -1,4 +1,4 @@
-describe Loom::Shell::HarnessCommand do
+describe Loom::Shell::HarnessBlob do
 
   HARNESS = "./scripts/harness.sh"
 
@@ -30,7 +30,7 @@ describe Loom::Shell::HarnessCommand do
 
   describe "scripts/harness.sh parity" do
 
-    subject { Loom::Shell::HarnessCommand.new cmd }
+    subject { Loom::Shell::HarnessBlob.new cmd }
 
     it "computes a valid script checksum" do
       run_harnes_script "--check", golden_checksum, {

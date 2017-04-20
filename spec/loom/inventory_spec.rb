@@ -53,6 +53,13 @@ describe Loom::Inventory do
       expect(subject.hosts.size).to be 3
     end
 
+    it "#disable marks hosts #disabled?" do
+      expect(subject.disabled? "host1").to be false
+      subject.disable "host1"
+      expect(subject.disabled? "host1").to be true
+      expect(subject.disabled? "host2").to be false
+    end
+
     it "lists #hostnames" do
       expect(subject.hostnames).to eql %w[host1 host2 host3]
     end

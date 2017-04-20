@@ -6,12 +6,14 @@ pattern :three_facts do |loom, facts|
   puts facts.facts.to_a.slice(0, 3).map { |tuple| tuple.join "=" }.join("\n")
 end
 
+
 desc "Reports `uptime` status"
 pattern :uptime do |loom, facts|
   loom << :uptime
   loom << :hostname
   loom.local << :hostname
 end
+#produces { pkg.installed? :httpd }
 
 desc "cd's to the /etc directory and runs `pwd`"
 pattern :cd do |loom, facts|

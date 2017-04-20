@@ -51,6 +51,15 @@ module Loom
 
         all_hosts = hostgroup_map.values.flatten + hostlist
         @hosts = parse_hosts(all_hosts).uniq { |h| h.hostname }
+        @disabled_hosts = {}
+      end
+
+      def disable(hostname)
+        @disabled_hosts[hostname] = true
+      end
+
+      def disabled?(hostname)
+        !!@disabled_hosts[hostname]
       end
 
       def hostnames

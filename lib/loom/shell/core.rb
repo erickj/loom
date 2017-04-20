@@ -6,7 +6,8 @@ module Loom::Shell
 
   class Core
 
-    def initialize(mod_loader, sshkit_backend)
+    def initialize(mod_loader, sshkit_backend, dry_run=false)
+      @dry_run = dry_run
       @mod_loader = mod_loader
       @sshkit_backend = sshkit_backend
 
@@ -21,10 +22,10 @@ module Loom::Shell
       @sudo_dirs = []
     end
 
-    attr_reader :session, :shell_api, :mod_loader
+    attr_reader :session, :shell_api, :mod_loader, :dry_run
 
     def local
-      @local ||= LocalShell.new @mod_loader, @session
+      @local ||= LocalShell.new @mod_loader, @session, @dry_run
     end
 
     def test(*cmd, check: :exit_status)
@@ -53,6 +54,24 @@ module Loom::Shell
 
     def verify_which(command)
       verify :which, command
+    end
+
+    def wrap(*wrapper, first: false, should_quote: true, &block)
+      raise "missing block for +wrap+" unless block_given?
+
+      cmd_wrapper = CmdWrapper.new(*wrapper, should_quote: should_quote)
+
+      if first
+        @cmd_wrappers.unshift(cmd_wrapper)
+      else
+        @cmd_wrappers.push(cmd_wrapper)
+      end
+
+      begin
+        yield
+      ensure
+        first ? @cmd_wrappers.shift : @cmd_wrappers.pop
+      end
     end
 
     def sudo(user=nil, *sudo_cmd, &block)
@@ -92,16 +111,35 @@ module Loom::Shell
     end
 
     def capture(*cmd_parts)
+      if @dry_run
+        # TODO: I'm not sure what to do about this.
+        Loom.log.warn "`capture` during dry run won't do what you want"
+      end
       execute *cmd_parts
       @session.last.stdout.strip
+    end
+
+    def pipe(*cmds)
+      cmd = CmdWrapper.pipe *cmds.map { |*cmd| CmdWrapper.new *cmd }
+      execute cmd
     end
 
     def execute(*cmd_parts, is_test: false, **cmd_opts)
       cmd_parts.compact!
       raise "empty command passed to execute" if cmd_parts.empty?
 
-      result = execute_internal *cmd_parts, **cmd_opts
-      @session << CmdResult.create_from_sshkit_command(result, is_test)
+      result = if @dry_run
+                 wrap :printf, :first => true do
+                   cmd_result = execute_internal *cmd_parts, **cmd_opts
+                   Loom.log.info do
+                     "\t%s" % prompt_fmt(cmd_result.full_stdout.strip)
+                   end
+                   cmd_result
+                 end
+               else
+                 execute_internal *cmd_parts, **cmd_opts
+               end
+      @session << CmdResult.create_from_sshkit_command(result, is_test, self)
 
       Loom.log.debug @session.last.stdout unless @session.last.stdout.empty?
       Loom.log.debug @session.last.stderr unless @session.last.stderr.empty?
@@ -148,12 +186,31 @@ module Loom::Shell
     # Here be dragons.
     # @return [String|Loom::Shell::CmdWrapper]
     def create_command(*cmd_parts)
+      cmd_wrapper = if cmd_parts.is_a? CmdWrapper
+                      cmd_parts
+                    else
+                      Loom.log.debug3(self) { "new cmd from parts => #{cmd_parts}" }
+                      CmdWrapper.new *cmd_parts
+                    end
+
+      # Useful for sudo, dry runs, timing a set of commands, or
+      # timeout... anytime you want to prefix a group of commands.  Reverses the
+      # array to wrap from inner most call to `#{wrap}` to outer most.
+      cmd = @cmd_wrappers.reverse.reduce(cmd_wrapper) do |cmd_or_wrapper, wrapper|
+        Loom.log.debug3(self) { "wrapping cmds => #{wrapper} => #{cmd_or_wrapper}"}
+        wrapper.wrap cmd_or_wrapper
+      end
+
+      unless @sudo_dirs.empty? || @dry_run
+        cmd = "cd #{@sudo_dirs.last}; " << cmd.to_s
+      end
+      cmd
     end
 
     # A shell object restricted to localhost.
     class LocalShell < Core
-      def initialize(mod_loader, session)
-        super mod_loader, SSHKit::Backend::Local.new
+      def initialize(mod_loader, session, dry_run)
+        super mod_loader, SSHKit::Backend::Local.new, dry_run
         @session = session
       end
 

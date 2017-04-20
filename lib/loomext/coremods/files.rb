@@ -80,13 +80,20 @@ module LoomExt::CoreMods
         each_path :action => :mkdir, :flags => flags
       end
 
-      def overwrite(text="")
+      def append(text="")
         each_path do |p|
-          loom.x <<EOS
-cat <<LOOMHEREDOC > #{p}
-#{text}
-LOOMHEREDOC
-EOS
+          loom.test "[ -f #{p} ]"
+
+          redirect = Loom::Shell::CmdRedirect.append_stdout p
+          cmd = Loom::Shell::CmdWrapper.new(
+            :"/bin/echo", "-e", text, redirect: redirect)
+          shell.execute cmd
+        end
+      end
+
+      def write(text="")
+        each_path do |p|
+          loom.x :"/bin/echo", "-e", text, :piped_cmds => [[:tee, p]]
         end
       end
 

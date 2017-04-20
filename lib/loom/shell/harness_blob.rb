@@ -4,7 +4,7 @@ require 'digest/sha1'
 module Loom::Shell
 
   # A blob of commands fit for sending to the harness.
-  class HarnessCommand
+  class HarnessBlob
 
     def initialize(cmd_blob)
       @cmd_blob = cmd_blob
