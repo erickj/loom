@@ -357,6 +357,11 @@ module VMs
     puts "Virtualbox VM 'vm0.local' exists: #{vm0_exists}"
   end
 
+  desc "Check if some virtualbox vms exist"
+  pattern :list do |loom, facts|
+    loom.local.vbox.list
+  end
+
   desc "Takes a snapshot of a VM"
   pattern :snap do |loom, facts|
     loom.local.vbox.snapshot "vm0.local", snapshot_name: "test:snap"

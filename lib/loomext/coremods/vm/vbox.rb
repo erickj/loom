@@ -9,11 +9,15 @@ module LoomExt::CoreMods::VM
 
     module Actions
       def check_exists(vm)
-        loom.test "vboxmanage showvminfo #{vm}"
+        loom.test "vboxmanage showvminfo #{vm}".split
       end
 
       def check_running(vm)
-        loom.test "vboxmanage list runningvms | grep \"#{vm}\""
+        loom.test "vboxmanage list runningvms | grep \"#{vm}\"".split
+      end
+
+      def list
+        loom << "vboxmanage list vms".split
       end
 
       def snapshot(vm, action: :take, snapshot_name: nil)
@@ -23,7 +27,7 @@ module LoomExt::CoreMods::VM
         cmd <<  snapshot_name if snapshot_name
         cmd = cmd.join " "
 
-        loom << cmd
+        loom << cmd.split
       end
 
       def import(ova_file, vm, disk, take_snapshot: true)
