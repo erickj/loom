@@ -51,6 +51,8 @@ module Loom
           IO.new device_value, 'a'
         when String
           File.new device_value, 'a'
+        when StringIO
+          device_value
         else
           raise ConfigError, "log_device => #{device_value}"
         end

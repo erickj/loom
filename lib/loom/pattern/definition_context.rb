@@ -26,6 +26,13 @@ module Loom::Pattern
       host_fact_set.merge merged_fact_map
     end
 
+    # TODO: #define_let_readers is a TERRIBLE name. Rename this method.
+    #
+    # The method is called by Reference#call with the Reference::RunContext
+    # instance. The "let" defined local declarations are added as method
+    # definitions on each RunContext instance. The @merged_let_map is the map of
+    # let definitions, merged from the associated module, up the namespace
+    # graph, allowing for inheriting and overriding +let+ declarations.
     def define_let_readers(scope_object, fact_set)
       @merged_let_map.each do |let_key, block|
         raise "no let block" unless block
