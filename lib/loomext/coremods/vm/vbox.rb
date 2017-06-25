@@ -21,7 +21,7 @@ module LoomExt::CoreMods::VM
       end
 
       def snapshot(vm, action: :take, snapshot_name: nil)
-        raise UnknownVM, src_vm unless check_exists(vm)
+        raise UnknownVM, vm unless check_exists(vm)
 
         cmd = ["vboxmanage snapshot #{vm} #{action}"]
         cmd <<  snapshot_name if snapshot_name
