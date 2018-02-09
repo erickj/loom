@@ -22,7 +22,8 @@ module Loom::Pattern
       begin
         run_context.run shell_api, fact_set
       rescue => e
-        Loom.log.error "error executing '#{slug}' in #{source_file} => #{e}"
+        error_msg = "error executing '#{slug}' in #{source_file} => #{e} \n%s"
+        Loom.log.error(error_msg % e.backtrace.join("\n\t"))
         raise
       end
     end

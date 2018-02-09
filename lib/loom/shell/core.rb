@@ -28,7 +28,7 @@ module Loom::Shell
       @local ||= LocalShell.new @mod_loader, @session, @dry_run
     end
 
-    def test(*cmd, check: :exit_status)
+    def test(*cmd, check: :exit_status, **cmd_opts)
       # TODO: is_test smells like a hack. I can't rely on Command#is_success?
       # here (returned from execute) because I'm overriding it with :is_test =>
       # true. Fix Command#is_success? to not be a lie.. that is a lazy hack for
@@ -36,7 +36,7 @@ module Loom::Shell
       # objects and declare style of reporting & error code handling it
       # has. Commands can be defined to ignore errors and just return their
       # results.
-      execute *cmd, :is_test => true
+      execute *cmd, :is_test => true, **cmd_opts
 
       case check
       when :exit_status

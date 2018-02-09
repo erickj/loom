@@ -13,7 +13,9 @@ module LoomExt::CoreMods::VM
       end
 
       def check_running(vm)
-        loom.test "vboxmanage list runningvms | grep \"#{vm}\"".split
+        loom.test "vboxmanage list runningvms".split, :piped_cmds => [
+          "grep \"#{vm}\"".split
+        ]
       end
 
       def list
@@ -35,7 +37,7 @@ module LoomExt::CoreMods::VM
 
         loom << "vboxmanage import #{ova_file} \
             --vsys 0 --vmname #{vm} \
-            --vsys 0 --unit 12 --disk '#{disk}'"
+            --vsys 0 --unit 12 --disk '#{disk}'".split
 
         if take_snapshot
           snapshot vm, action: :take, snapshot_name: "#{vm}:import"
@@ -53,7 +55,7 @@ module LoomExt::CoreMods::VM
         cmd << "--register"
         cmd = cmd.join " "
 
-        loom << cmd
+        loom << cmd.split
 
         if take_snapshot
           snapshot dst_vm, action: :take, snapshot_name: "#{dst_vm}:clone"
@@ -62,7 +64,7 @@ module LoomExt::CoreMods::VM
 
       def up(vm)
         unless check_running(vm)
-          loom << "vboxmanage startvm #{vm} --type headless"
+          loom << "vboxmanage startvm #{vm} --type headless".split
         else
           Loom.log.warn "VM #{vm} already running, nothing to do"
         end
@@ -70,7 +72,7 @@ module LoomExt::CoreMods::VM
 
       def down(vm)
         if check_running(vm)
-          loom << "vboxmanage controlvm #{vm} acpipowerbutton"
+          loom << "vboxmanage controlvm #{vm} acpipowerbutton".split
         else
           Loom.log.warn "VM #{vm} not running, nothing to do"
         end
