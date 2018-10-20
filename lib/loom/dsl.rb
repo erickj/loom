@@ -31,6 +31,7 @@ module Loom
         sshkit_backend = self
 
         begin
+          # TODO: document the reciever of this yield
           yield sshkit_backend, host_spec
         rescue SocketError => e
           Loom.log.error "error connecting to host => #{host_spec.hostname}"
@@ -53,6 +54,7 @@ module Loom
       end
     end
 
+    # TODO: Why did I make this "shadow" class?
     class SSHKitDSLShadow
       extend SSHKit::DSL
     end
