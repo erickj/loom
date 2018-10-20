@@ -44,6 +44,14 @@ module Loom::Pattern
       report << "Completed in: %01.3fs" % @delta_t
 
       cmds.find_all { |cmd| !cmd.is_test }.each do |cmd|
+        # TODO: this is a bit confusing for the user... when you cat a file from
+        # a loom pattern, the output of a command isn't visible unless -V is
+        # specified... not sure what to do here. I don't want to see the output
+        # of every command, and I don't really want to pipe more info through
+        # the `@shell_session.command_results` (e.g. should_report_result:)?
+        #
+        # Although.. maybe that's the better API? then the logic here can be
+        # moved and strategized per command/result/shell.
         if !cmd.success? || @loom_config.run_verbose
           report.concat generate_cmd_report(cmd)
         end

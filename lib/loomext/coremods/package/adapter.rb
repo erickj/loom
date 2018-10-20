@@ -54,7 +54,8 @@ module LoomExt::CoreMods
     class AptAdapter < DpkgAdapter
 
       def install(pkg_name)
-        loom.net.with_net { loom << "echo apt-get install #{pkg_name}" }
+        loom.x "apt-get", "-y", "install", pkg_name
+#        loom.net.with_net { loom << "echo apt-get install #{pkg_name}" }
       end
 
       def uninstall(pkg_name)
@@ -62,11 +63,14 @@ module LoomExt::CoreMods
       end
 
       def update_cache
-        loom.net.with_net { loom << "apt update" }
+#        loom.net.with_net { loom << "apt update" }
+        loom.x "apt", "-y", "update"
       end
 
-      def upgrade(pkg_name)
-        loom.net.with_net { loom << "apt upgrade" }
+      def upgrade(pkg_name = nil)
+#        loom.net.with_net { loom << "apt upgrade" }
+        args = ["apt-get", "-y", "upgrade", pkg_name].compact
+        loom.x(*args)
       end
     end
 

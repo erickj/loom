@@ -165,8 +165,8 @@ module Loom
       result_reporter = Loom::Pattern::ResultReporter.new(
         @loom_config, pattern_ref.slug, hostname, shell_session)
 
-      # TODO: This is a crappy mechanism for tracking errors, there should be an
-      # exception thrown inside of Shell when a command fails and pattern
+      # TODO: This is a crappy mechanism for tracking errors (hency my crappy error reporting :( ),
+      # there should be an exception thrown inside of Shell when a command fails and pattern
       # execution should stop. All errors should come from exceptions.
       run_failure = []
       begin
@@ -175,7 +175,8 @@ module Loom
         Loom.log.debug e.backtrace.join "\n\t"
         run_failure << e
       ensure
-        # TODO: this prints out [Result: OK] even if an exception is raised
+        # TODO[P0]: this prints out [Result: OK] even if an exception is raised... this is really
+        # annoying.
         result_reporter.write_report
 
         # TODO: this is not the correct error condition.

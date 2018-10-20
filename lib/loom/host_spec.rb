@@ -32,7 +32,7 @@ module Loom
       host.ssh_options = {
         :auth_methods => ['publickey'],
         :keys => ["~/.ssh/id_esd25519_2"],
-        :verbose => :debug,
+#        :verbose => :debug,
       }
       Loom.log.debug1(self) { "parsing hoststring[#{host_string}] => #{host}" }
       Loom.log.debug1(self) { "netssh options for host[#{host}] => #{host.netssh_options}" }

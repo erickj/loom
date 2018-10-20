@@ -28,7 +28,8 @@
 #  EOS
 #
 # There are 2 different shells that the harness deals with. The
-# harness shell, and the command shell.
+# harness shell, and the command shell. The point being, to isolate
+# each environment and be independent of the other.
 #
 # The harness shell is the shell used to run the harness script (this
 # file). Only POSIX features are supported in the harness

@@ -27,13 +27,13 @@ Gem::Specification.new do |s|
   # release due to net-scp gem dependencies.
   # I can manually `gem install net-ssh --version 4.0.0.beta3` for now.
   # s.add_dependency 'net-ssh', '>= 4.0.0.beta3'
-  s.add_dependency 'net-ssh', '>= 3'
+  s.add_dependency 'net-ssh', '>= 5'
   s.add_dependency 'rbnacl-libsodium', '1.0.10'
-  s.add_dependency 'bcrypt_pbkdf', '<2.0'
+  s.add_dependency 'bcrypt_pbkdf', ">= 1.0", "< 2.0"
 
   # New net-ssh requiremetns for ed25519
   # https://github.com/net-ssh/net-ssh/issues/565
-  s.add_dependency 'ed25519', '<2.0'
+  s.add_dependency 'ed25519', '>=1.0', '<2.0'
 
   s.add_development_dependency 'bundler', '~> 1.13'
   s.add_development_dependency 'rake', '~> 11.3'
