@@ -41,11 +41,11 @@ module Loom::Mods
           bound_action_name = tuple[1]
 
           define_method public_action_name do |*args, &block|
-            # TODO: Effectively this is the API for all mods, but it's burried
-            # here in the middle of nowhere. Add documentation - or make it
-            # easier to read.
-            Loom.log.debug2(self) do
-              "proxy to mod #{@mod} => #{public_action_name}: #{args} #{block}"
+            # TODO[P0]: Effectively this is the API for all mods, but it's
+            # burried here in the middle of nowhere. Add documentation - or make
+            # it easier to read.
+            Loom.log.debug(self) do
+              "proxy to mod action: #{public_action_name} => #{bound_action_name}, #{@mod}"
             end
 
             @mod.send bound_action_name, *args, &block
@@ -89,7 +89,7 @@ module Loom::Mods
       def add_action(action_name, bound_method_name, namespace=nil)
         if namespace.nil?
           tuple = [action_name, bound_method_name]
-          @action_tuples << tuple unless namespace 
+          @action_tuples << tuple unless namespace
         else
           # Adds an action name to a nested ActionMap
           add_namespace(namespace).add_action action_name, bound_method_name

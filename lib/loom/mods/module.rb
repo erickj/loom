@@ -40,6 +40,9 @@ module Loom::Mods
       else
         Loom.log.debug3(self) { "initing action => #{args}" }
         init_action *args, &pattern_block
+
+        # TODO: ooohhh... the action_proxy code path is fucking
+        # crazy. ActionProxy needs some documentation.
         action_proxy
       end
     end
@@ -50,6 +53,8 @@ module Loom::Mods
         Loom.log.debug2(self) { "registered mod => #{name}" }
 
         if block_given?
+          # TODO: i forget what mod_blocks are. read through, remember, and
+          # document them.
           Loom.log.debug2(self) { "acting as mod_block => #{name}:#{block}" }
           define_method :mod_block, &block
         end
@@ -83,6 +88,11 @@ module Loom::Mods
       def bind_action(action_name, unbound_method, namespace=nil)
         bound_method_name = [namespace, action_name].compact.join '_'
 
+        # TODO: document why the `define_method` calls in class only operate on
+        # the single mod instance, rather than adding each "bound_method_name"
+        # (e.g.) to each instance of Module. (actually I think it's because this
+        # is executing from the subclass (via import_actions), so it's only that
+        # class). in any case, add more docs and code pointers.
         define_method bound_method_name do |*args, &block|
           Loom.log.debug1(self) { "exec mod action #{self.class}##{bound_method_name}" }
 
