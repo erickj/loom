@@ -100,6 +100,8 @@ module Loom
         Loom::Inventory::InventoryList.active_inventory @loom_config
       @active_hosts = @inventory_list.hosts
 
+      # TODO: the naming inconsistency between Pattern::Loader and
+      # Mods::ModLoader bothers me... :(
       pattern_loader = Loom::Pattern::Loader.load @loom_config
       @pattern_refs = pattern_loader.patterns @pattern_slugs
 
@@ -142,12 +144,13 @@ module Loom
             pattern_shell = Loom::Shell.create @mod_loader, sshkit_backend, dry_run
 
             Loom.log.warn "dry run only => #{pattern_description}" if dry_run
-            success = execute_pattern pattern_ref, pattern_shell, fact_set
+            failures = execute_pattern pattern_ref, pattern_shell, fact_set
 
-            if success
+            if failures.empty?
               Loom.log.debug "success on => #{pattern_description}"
             else
-              Loom.log.error "error on => #{pattern_description}, details pending"
+              Loom.log.error "failures on => #{pattern_description}:\n\t%s" % (
+                failures.join("\n\t"))
             end
           end
         rescue IOError => e
@@ -194,10 +197,8 @@ module Loom
         end
         @result_reports << result_reporter
         @run_failures << run_failure unless run_failure.empty?
-
-        # is success
-        run_failure.empty?
       end
+      run_failure
     end
 
     private
