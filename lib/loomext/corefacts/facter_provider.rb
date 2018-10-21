@@ -9,6 +9,7 @@ module LoomExt::CoreFacts
       @has_facter = shell.test :which, "facter"
       disable(host_spec) unless @has_facter
       @shell = shell
+      @namespace = :facter
     end
 
     def collect_facts

@@ -1,7 +1,8 @@
 module Loom::Facts
 
   class Provider
-    attr_reader :fact_map
+    # TODO: add documentation re: use of namespace in fact_set.rb
+    attr_reader :fact_map, :namespace
 
     class << self
       def disable_for_host(host_spec, klass)

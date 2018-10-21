@@ -17,19 +17,33 @@ module Loom::Facts
         fact_providers.each do |provider|
           next if Provider.disabled_for_host?(host_spec, provider.class)
 
-          Loom.log.debug { "loading facts from provider => #{provider}" }
+          namespace = provider.namespace
+          Loom.log.debug { "loading facts from provider => #{provider}[#{namespace}]" }
 
+          provider_facts = {}
           begin
             provider.collect_facts.each do |k, v|
               k = k.to_sym
-              if fact_map[k]
-                Loom.log.warn "overriding fact => #{k}"
+              provider_facts[k] = v
+            end
+
+            if namespace
+              if fact_map[namespace]
+                Loom.log.warn "overriding fact[#{namespace}] with namespace"
               end
-              Loom.log.debug5(self) { "adding fact => #{k}=#{v.to_s}" }
-              fact_map[k] = v
+              fact_map[namespace] = provider_facts
+            else
+              provider_facts.each do |k, v|
+                if fact_map[k]
+                  Loom.log.warn "overriding fact[#{k}]"
+                end
+                Loom.log.debug5(self) { "adding fact => #{k}=#{v.to_s}" }
+                fact_map[k] = v
+              end
             end
           rescue => e
             Loom.log.error "error executing fact provider #{provider.class} => #{e.message}"
+            Loom.log.debug(self) { e.backtrace.join("\n\t") }
             provider.disable(host_spec)
           end
         end
