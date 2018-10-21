@@ -11,6 +11,10 @@ module Loom::Pattern
       @desc = description
     end
 
+    def is_expanding?
+      false
+    end
+
     def call(shell_api, host_fact_set)
       run_context = RunContext.new @unbound_method, @definition_ctx
 

@@ -88,16 +88,33 @@ module Loom::Pattern
       def refs_for_mod_spec(mod_spec)
         mod = mod_spec[:module]
         context = context_for_mod_spec mod_spec
-        source = @source
 
         mod_spec[:pattern_methods].map do |m|
-          method = mod.pattern_method m
-          desc = mod.pattern_description m
           slug = compute_slug mod_spec[:namespace_list], m
 
-          Loom.log.warn "no descripiton for pattern => #{slug}" unless desc
-          Reference.new slug, method, source, context, desc
+          if mod.is_weave?(m)
+            Loom.log.debug2(self) { "adding ExpandingReference for weave: #{slug}" }
+            build_expanding_reference(m, slug, mod)
+          else
+            Loom.log.debug2(self) { "adding Reference for pattern: #{slug}" }
+            build_pattern_reference(m, slug, context, mod)
+          end
         end
+      end
+
+      def build_expanding_reference(weave_name, slug, mod)
+        desc = mod.pattern_description weave_name
+        Loom.log.warn "no descripiton for weave => #{slug}" unless desc
+
+        ExpandingReference.new slug, mod.weave_slugs[weave_name], @source, desc
+      end
+
+      def build_pattern_reference(pattern_name, slug, context, mod)
+        method = mod.pattern_method pattern_name
+        desc = mod.pattern_description pattern_name
+        Loom.log.warn "no descripiton for pattern => #{slug}" unless desc
+
+        Reference.new slug, method, @source, context, desc
       end
 
       def context_for_mod_spec(mod_spec)

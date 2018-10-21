@@ -104,7 +104,7 @@ module Loom::Pattern
   # - pattern
   # - let
   # - after/before
-  # and other non-utility methods to the DSL
+  # other methods are utility methods used to process and run patterns.
   module DSL
 
     loom_accessor :namespace
@@ -127,18 +127,32 @@ module Loom::Pattern
     end
 
     def pattern(name, &block)
-      Loom.log.debug3(self) { "defined pattern method => #{name}" }
+      Loom.log.debug1(self) { "defining pattern => #{name}" }
+      define_pattern_internal(name, &block)
+    end
+
+    def weave(name, pattern_slugs)
+      Loom.log.debug1(self) { "defining weave => #{name}" }
+      @weave_slugs ||= {}
+      @weave_slugs[name.to_sym] = pattern_slugs.map { |s| s.to_s }
+
+      unless @next_description
+        @next_description = "Weave runs patterns: %s" % pattern_slugs.join(", ")
+      end
+
+      define_pattern_internal(name) { |_, _| true }
+    end
+
+    def define_pattern_internal(name, &block)
       @pattern_methods ||= []
       @pattern_method_map ||= {}
       @pattern_descriptions ||= {}
-      @pattern_weaves ||= {}
 
       method_name = name.to_sym
 
       @pattern_methods << method_name
       @pattern_method_map[method_name] = true
       @pattern_descriptions[method_name] = @next_description
-      @pattern_weaves[methd_name] = false
       @next_description = nil
 
       define_method method_name, &block
@@ -155,6 +169,14 @@ module Loom::Pattern
 
     def after(&block)
       hook :after, &block
+    end
+
+    def weave_slugs
+      @weave_slugs || {}
+    end
+
+    def is_weave?(name)
+      !!weave_slugs[name]
     end
 
     def pattern_methods
