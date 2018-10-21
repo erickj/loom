@@ -2,6 +2,7 @@ module LoomExt::CoreMods
   class Files < Loom::Mods::Module
 
     register_mod :files
+    required_commands :cat, :mv, :tee, :chown, :rm, :touch, :sudo, :mkdir, :echo
 
     # TODO: document loom file statements like:
     #     `loom.files("some", "different/paths").cat`
@@ -88,6 +89,8 @@ module LoomExt::CoreMods
         each_path :action => :mkdir, :flags => flags
       end
 
+      # TODO this sudo line is just another instance of needing the harness to
+      # work properly (in this case to provides a hack for sudo_append)
       def ensure_line(line, sudo: false)
         if loom.is_sudo?
           Loom.log.warn "do not use files.ensure_line in sudo  due to poor command escaping" +
@@ -110,7 +113,8 @@ module LoomExt::CoreMods
         end
       end
 
-      # this is a hack to accomodate append being f'd inside sudo blocks
+      # TODO: Get the harness working, this is a hack to accomodate append being
+      # f'd inside sudo blocks
       def sudo_append(text="")
         if text.index "\n"
           Loom.log.warn "append lines individually until cmd escaping is fixed.... "

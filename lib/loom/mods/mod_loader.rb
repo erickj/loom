@@ -30,7 +30,7 @@ module Loom::Mods
         raise ModDefinedError, name if instance_methods.include? name
 
         define_mod_factory name, klass
-        Loom.log.debug1(self) { "registered mod => #{klass} as #{name}" }
+        Loom.log.debug(self) { "registered mod => #{klass} as #{name}" }
 
         opts.each do |k,v|
           case k
