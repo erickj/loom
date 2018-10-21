@@ -83,8 +83,10 @@ module Loom::Facts
     end
 
     def get(fact_name)
-      result = @fact_map[fact_name.to_sym]
-      result.dup rescue result
+      v = @fact_map[fact_name.to_sym]
+      dup = v.dup rescue v
+      dup = FactSet.new(@host_spec, {}) if dup.nil?
+      dup.is_a?(Hash) ? FactSet.new(@host_spec, dup) : dup
     end
     alias_method :[], :get
 

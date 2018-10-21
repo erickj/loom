@@ -98,6 +98,13 @@ Loom::Facts::FactSet as parameters.
 
 =end
 module Loom::Pattern
+
+  # TODO: clarify this DSL to only export:
+  # - description
+  # - pattern
+  # - let
+  # - after/before
+  # and other non-utility methods to the DSL
   module DSL
 
     loom_accessor :namespace
@@ -124,12 +131,14 @@ module Loom::Pattern
       @pattern_methods ||= []
       @pattern_method_map ||= {}
       @pattern_descriptions ||= {}
+      @pattern_weaves ||= {}
 
       method_name = name.to_sym
 
       @pattern_methods << method_name
       @pattern_method_map[method_name] = true
       @pattern_descriptions[method_name] = @next_description
+      @pattern_weaves[methd_name] = false
       @next_description = nil
 
       define_method method_name, &block

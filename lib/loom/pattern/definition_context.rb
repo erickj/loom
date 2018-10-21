@@ -49,6 +49,8 @@ module Loom::Pattern
       Hook.after_hooks merged_hooks.reverse
     end
 
+    # Helper methods for flattening all parent definition contexts for running a
+    # pattern ref.
     private
     def merged_fact_map
       merged_contexts.map(&:fact_map).reduce({}) do |merged_map, next_map|
@@ -62,6 +64,10 @@ module Loom::Pattern
       end
     end
 
+    ##
+    # Flattens the list of hooks from all parent modules so that executing the
+    # pattern reference executes all expected hooks in the correct order, w/o
+    # needing to recurse.
     def merged_hooks
       return hooks if @parent_context.nil?
       merged_contexts.map(&:hooks).flatten

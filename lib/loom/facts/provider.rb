@@ -4,6 +4,10 @@ module Loom::Facts
     # TODO: add documentation re: use of namespace in fact_set.rb
     attr_reader :fact_map, :namespace
 
+    # TODO: add a mechanism to check for prerequisites to enabling a fact provider, currently
+    # FacterProvider does this manually. At a minimum binaries required by the fact provider to
+    # collect info should be checked to be available.
+
     class << self
       def disable_for_host(host_spec, klass)
         Loom.log.warn "disabling fact provider => #{klass} on #{host_spec.hostname}"

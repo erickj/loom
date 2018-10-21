@@ -1,3 +1,8 @@
+# THERE BE DRAGONS HERE
+# TODO: add documentation re: how the .loom file is parsed (exec'd) and turned
+# into a reference set. There's also a lot of dark magic w/ generating
+# stacktraces to get the correct .loom file line (but I forget if that's done
+# here or in pattern/reference.rb maybe?)
 module Loom::Pattern
 
   DuplicatePatternRef = Class.new Loom::LoomError
@@ -54,6 +59,8 @@ module Loom::Pattern
         def create(ruby_code, source)
           shell_module = Module.new
           shell_module.include Loom::Pattern
+          # TODO: I think this is my black magic for capturing stacktrace
+          # info... I forget the details. Add documentation.
           shell_module.module_eval ruby_code, source, 1
           shell_module.namespace ""
 

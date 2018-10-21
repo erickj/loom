@@ -128,7 +128,7 @@ module Loom
             end
 
             Loom.log.debug "collecting facts for => #{pattern_description}"
-            # Collect facts for each pattern run on each host, this way if one
+            # Collects facts for each pattern run on each host, this way if one
             # pattern run updates would be facts, the next pattern will see the
             # new fact.
             fact_shell = Loom::Shell.create @mod_loader, sshkit_backend, dry_run
@@ -136,10 +136,8 @@ module Loom
                          .merge @other_facts
 
             Loom.log.info "running pattern => #{pattern_description}"
-            # Each pattern execution needs its own shell and mod loader to make
-            # sure context is reported correctly (this is probably a hack, there
-            # should just be a way to clear/ignore state from certain commands -
-            # like the fact_finding ones above).
+            # Creates a new shell for executing the pattern, so as not to be
+            # tainted by the fact finding shell above.
             pattern_shell = Loom::Shell.create @mod_loader, sshkit_backend, dry_run
 
             Loom.log.warn "dry run only => #{pattern_description}" if dry_run
@@ -165,9 +163,11 @@ module Loom
       result_reporter = Loom::Pattern::ResultReporter.new(
         @loom_config, pattern_ref.slug, hostname, shell_session)
 
-      # TODO: This is a crappy mechanism for tracking errors (hency my crappy error reporting :( ),
-      # there should be an exception thrown inside of Shell when a command fails and pattern
-      # execution should stop. All errors should come from exceptions.
+      # TODO: This is a crappy mechanism for tracking errors - hency my crappy
+      # error reporting :( - there should be an exception thrown inside of Shell
+      # when a command fails and pattern execution should stop. All errors
+      # should come from exceptions. This needs to be thought about wrt to the
+      # defined `failure_strategy`
       run_failure = []
       begin
         pattern_ref.call(shell.shell_api, fact_set)
@@ -175,8 +175,8 @@ module Loom
         Loom.log.debug e.backtrace.join "\n\t"
         run_failure << e
       ensure
-        # TODO[P0]: this prints out [Result: OK] even if an exception is raised... this is really
-        # annoying.
+        # TODO[P0]: this prints out [Result: OK] even if an exception is
+        # raised... this is really annoying.
         result_reporter.write_report
 
         # TODO: this is not the correct error condition.
@@ -198,10 +198,10 @@ module Loom
         Loom.log.warn "disabling host per :run_failure_strategy => #{failure_strategy}"
         @inventory_list.disable hostname
       when :fail_fast
-        Loom.log.error "erroring out of failed scenario per :run_failure_strategy"
+        Loom.log.error "erroring out of failed pattern per :run_failure_strategy"
         raise FailFastExecutionError, failure_summary
       when :cowboy
-        Loom.log.warn "continuing on past failed scenario per :run_failure_strategy"
+        Loom.log.warn "continuing on past failed pattern per :run_failure_strategy"
       else
         raise ConfigError, "unknown failure_strategy: #{failure_stratgy}"
       end
