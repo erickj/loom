@@ -1,5 +1,12 @@
 module Loom::Facts
 
+  EMPTY_HASH = {}
+  class << EMPTY_HASH
+    def [](*args)
+      self
+    end
+  end
+
   ##
   # A factset is created by running each registered Loom::Facts::Provider and
   # calling Provider+collect_facts+. See ./fact_file_provider.rb and
@@ -85,8 +92,11 @@ module Loom::Facts
     def get(fact_name)
       v = @fact_map[fact_name.to_sym]
       dup = v.dup rescue v
-      dup = FactSet.new(@host_spec, {}) if dup.nil?
-      dup.is_a?(Hash) ? FactSet.new(@host_spec, dup) : dup
+      if dup.nil?
+        EMPTY_HASH
+      else
+        dup
+      end
     end
     alias_method :[], :get
 

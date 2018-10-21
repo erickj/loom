@@ -19,8 +19,9 @@ module Loom
       program :name, "Loom - Weaving through infrastructure"
       program :version , Loom::VERSION
       program :description, <<EOS
-A lightweight infrastructure managment tool designed to manage hosts
-through SSH, loosely inspired by Python Fabric - http://www.fabfile.org/.
+A lightweight infrastructure managment tool for managing hosts through SSH,
+inspired by [Python Fabric](http://www.fabfile.org/) with thanks and nods
+[Capistrano](https://capistranorb.com/).
 
 Try `loom weave uptime -H localhost` to see an example.
 EOS
@@ -116,12 +117,14 @@ EOS
           puts "Loom mods are:"
           puts ""
 
+          # TODO: I think this is broken... fix this.
           Loom::Mods::ModLoader.registered_mods.each do |name, aliases|
             puts aliases.join(", ")
             puts "\t#{name}"
           end
         end
       end
+      alias_command :"m", "mods"
 
       command :"patterns" do |c|
         c.syntax = "loom patterns [pattern]"
