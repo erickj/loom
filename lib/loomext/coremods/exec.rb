@@ -31,8 +31,14 @@ module LoomExt::CoreMods
   end
 
   class Sudo < Loom::Mods::Module
-    register_mod :sudo do |user: nil, cmd: nil, &block|
+    register_mod :sudo do |user: :root, cmd: nil, &block|
       shell.sudo user, cmd, &block
+    end
+  end
+
+  class SudoCheck < Loom::Mods::Module
+    register_mod :is_sudo? do
+      shell.is_sudo?
     end
   end
 

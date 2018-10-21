@@ -24,6 +24,10 @@ module Loom::Shell
 
     attr_reader :session, :shell_api, :mod_loader, :dry_run
 
+    def is_sudo?
+      !@sudo_users.empty?
+    end
+
     def local
       @local ||= LocalShell.new @mod_loader, @session, @dry_run
     end
@@ -96,6 +100,35 @@ module Loom::Shell
       end
     end
 
+    # def sudo(user=nil, *sudo_cmd, &block)
+    #   # I'm trying to work around crappy double escaping issues caused by
+    #   # sudo_legacy... but I'm failing
+    #   if block_given?
+    #     # TODO: this shit is broken with these errors:
+    #     #   $ ... 'You cannot switch to user '' using sudo, please check the sudoers file'
+    #     #
+    #     # Loom.log.debug3(self) { "sudo with SSHKit::Backend+as+" }
+    #     # @sshkit_backend.as user, &block
+
+    #     # Aside from probably being unsafe... this implementation leads to a
+    #     # hung terminal after switching to root.... sigh....
+    #     #
+    #     # Loom.log.warn(self) { "fix sudo... this doesn't seem safe" }
+    #     # execute "sudo", "su", user
+    #     # begin
+    #     #   yield
+    #     # ensure
+    #     #   execute "exit"
+    #     # end
+
+    #     Loom.log.debug3(self) { "sudo legacy... the other way" }
+    #     sudo_stack_and_wrap(user, *sudo_cmd, &block)
+    #   else
+    #     Loom.log.debug3(self) { "sudo legacy" }
+    #     sudo_stack_and_wrap(user, *sudo_cmd)
+    #   end
+    # end
+
     def cd(path, &block)
       Loom.log.debug1(self) { "cd => #{path} #{block}" }
 
@@ -163,9 +196,10 @@ module Loom::Shell
       "[%s]:$ %s" % [prompt_label, output]
     end
 
-    def execute_internal(*cmd_parts, piped_cmds: [])
+    def execute_internal(*cmd_parts, pipe_to: [])
       primary_cmd = create_command *cmd_parts
-      piped_cmds = piped_cmds.map { |cmd_parts| CmdWrapper.new *cmd_parts }
+      # TODO: where is piped_cmds used?
+      piped_cmds = pipe_to.map { |cmd_parts| CmdWrapper.new *cmd_parts }
 
       cmd = CmdPipeline.new([primary_cmd].concat(piped_cmds)).to_s
       # Tests if the command looks like "echo\ hi", the trailing slash after
@@ -191,9 +225,13 @@ module Loom::Shell
     # @return [String|Loom::Shell::CmdWrapper]
     def create_command(*cmd_parts)
       cmd_wrapper = if cmd_parts.is_a? CmdWrapper
+                      Loom.log.debug3(self) { "existing cmd from args => #{cmd_parts}" }
                       cmd_parts
+                    elsif cmd_parts[0].is_a? CmdWrapper
+                      Loom.log.debug3(self) { "existing cmd from args[0] => #{cmd_parts[0]}" }
+                      cmd_parts[0]
                     else
-                      Loom.log.debug3(self) { "new cmd from parts => #{cmd_parts}" }
+                      Loom.log.debug3(self) { "new cmd from args => #{cmd_parts}" }
                       CmdWrapper.new *cmd_parts
                     end
 

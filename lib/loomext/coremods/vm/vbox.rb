@@ -13,7 +13,7 @@ module LoomExt::CoreMods::VM
       end
 
       def check_running(vm)
-        loom.test "vboxmanage list runningvms".split, :piped_cmds => [
+        loom.test "vboxmanage list runningvms".split, :pipe_to => [
           "grep \"#{vm}\"".split
         ]
       end

@@ -49,7 +49,7 @@ module LoomExt::CoreMods
 
       def mv(new_path)
         each_path do |p|
-          shell.capture :mv, new_path
+          shell.capture :mv, p, new_path
         end
       end
 
@@ -88,20 +88,70 @@ module LoomExt::CoreMods
         each_path :action => :mkdir, :flags => flags
       end
 
-      def append(text="")
-        each_path do |p|
-          loom.test "[ -f #{p} ]"
+      def ensure_line(line, sudo: false)
+        if loom.is_sudo?
+          Loom.log.warn "do not use files.ensure_line in sudo  due to poor command escaping" +
+            ": use files.ensure_line and pass sudo: true"
+        end
 
-          redirect = Loom::Shell::CmdRedirect.append_stdout p
-          cmd = Loom::Shell::CmdWrapper.new(
-            :"/bin/echo", "-e", text, redirect: redirect)
-          shell.execute cmd
+        each_path do |p|
+          file = shell.capture :cat, p
+
+          unless file.match(line)
+            if sudo
+              sudo_append(line)
+            else
+              append(line)
+            end
+          end
+        end
+      end
+
+      # this is a hack to accomodate append being f'd inside sudo blocks
+      def sudo_append(text="")
+        if text.index "\n"
+          Loom.log.warn "append lines individually until cmd escaping is fixed.... "
+        end
+
+        each_path do |p|
+          text.each_line do |line|
+            loom.x "/bin/echo", "-e", line, :pipe_to => [[:sudo, :tee, "-a", p]]
+          end
+        end
+      end
+
+      def append(text="")
+        if text.index "\n"
+          Loom.log.warn "append lines individually until cmd escaping is fixed.... "
+        end
+
+        if loom.is_sudo?
+          Loom.log.warn "do not use files.append in sudo" +
+            ": use files.sudo_append due to poor command escaping"
+        end
+
+        each_path do |p|
+          # TODO: this shit is broken when escaped in a sudo command. This is
+          # why I began work on the harness.
+          # 	$ cd /home/pi; sudo -u root -- /bin/sh -c "/bin/echo -e 192.168.1.190 rp0\''; '\'" | tee -a /etc/hosts
+          #
+          text.each_line do |line|
+            loom.x :"/bin/echo", "-e", line, :pipe_to => [[:tee, "-a", p]]
+          end
+
+          # TODO: fix this broken shit w/ the harness, CmdRedirect and
+          # CmdWrapper are dogshit. This was an escaping attempt before harness
+          # script.
+          #
+          # redirect = Loom::Shell::CmdRedirect.append_stdout p
+          # cmd = Loom::Shell::CmdWrapper.new(
+          #   :"/bin/echo", "-e", text, redirect: redirect)
         end
       end
 
       def write(text="")
         each_path do |p|
-          loom.x :"/bin/echo", "-e", text, :piped_cmds => [[:tee, p]]
+          loom.x :"/bin/echo", "-e", text, :pipe_to => [[:tee, p]]
         end
       end
 
