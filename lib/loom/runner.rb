@@ -61,6 +61,7 @@ module Loom
         num_patterns_failed = @run_failures.size
         Loom.log.error "error executing #{num_patterns_failed} patterns => #{e}"
         Loom.log.debug e.backtrace.join "\n"
+        # TODO: I think the max return code is 255. Cap this if so.
         exit 100 + num_patterns_failed
       rescue Loom::LoomError => e
         Loom.log.error "loom error => #{e.inspect}"
@@ -141,7 +142,13 @@ module Loom
             pattern_shell = Loom::Shell.create @mod_loader, sshkit_backend, dry_run
 
             Loom.log.warn "dry run only => #{pattern_description}" if dry_run
-            execute_pattern pattern_ref, pattern_shell, fact_set
+            success = execute_pattern pattern_ref, pattern_shell, fact_set
+
+            if success
+              Loom.log.debug "success on => #{pattern_description}"
+            else
+              Loom.log.error "error on => #{pattern_description}, details pending"
+            end
           end
         rescue IOError => e
           # TODO: Try to patch SSHKit for a more specific error for unexpected SSH
@@ -168,6 +175,7 @@ module Loom
       # when a command fails and pattern execution should stop. All errors
       # should come from exceptions. This needs to be thought about wrt to the
       # defined `failure_strategy`
+      # @see the TODO at Loom::Shell::Core+test+
       run_failure = []
       begin
         pattern_ref.call(shell.shell_api, fact_set)
@@ -186,6 +194,9 @@ module Loom
         end
         @result_reports << result_reporter
         @run_failures << run_failure unless run_failure.empty?
+
+        # is success
+        run_failure.empty?
       end
     end
 

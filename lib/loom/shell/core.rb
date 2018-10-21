@@ -40,6 +40,7 @@ module Loom::Shell
       # objects and declare style of reporting & error code handling it
       # has. Commands can be defined to ignore errors and just return their
       # results.
+      # @see the TODO at Loom::Runner+execute_pattern+
       execute *cmd, :is_test => true, **cmd_opts
 
       case check
@@ -100,6 +101,8 @@ module Loom::Shell
       end
     end
 
+    # TODO: finish the harness... avoiding dealing w/ shell escaping, like
+    # from sudo, is the goal.
     # def sudo(user=nil, *sudo_cmd, &block)
     #   # I'm trying to work around crappy double escaping issues caused by
     #   # sudo_legacy... but I'm failing

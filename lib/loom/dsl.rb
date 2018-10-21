@@ -1,5 +1,10 @@
 require 'socket'
 
+##
+# Links to relevant SSHKit code:
+# https://github.com/capistrano/sshkit/blob/master/lib/sshkit/backends/abstract.rb
+# https://github.com/capistrano/sshkit/blob/master/lib/sshkit/backends/netssh.rb
+# https://github.com/capistrano/sshkit/blob/master/lib/sshkit/backends/local.rb
 module Loom
 
   # TODO: Rename this to something like SSHKitWrapper, DSL is a

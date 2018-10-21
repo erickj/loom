@@ -89,6 +89,7 @@ module LoomExt::CoreMods
       end
 
       def uninstall(pkg_name)
+        # TODO: fix all loom.execute calls w/ properly atomized params
         loom << "echo dnf uninstall"
       end
 

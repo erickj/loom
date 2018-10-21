@@ -7,6 +7,8 @@ module Loom
 
   class Config
 
+    # TODO: Add a more module config_var registry mechanism for Modules and
+    # FactProviders to register their own values & defaults.
     CONFIG_VARS = {
       :loom_search_paths => ['/etc/loom', File.join(ENV['HOME'], '.loom'), './.loom'],
       :loom_files => ['site.loom'],
