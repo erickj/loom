@@ -49,12 +49,19 @@ module Loom::Mods
 
     class << self
 
+      ##
+      # Registers a mod as a new namespace on the loom object.
+      # Mods add actions either via a `mod_block` or via registering
+      # actions. Only 1 mod_block may be registered per module (which should
+      # be fixed), otherwise actions are imported to add module behavior.
+      # See loom/lib/loomext/coremods.rb and files.rb for examples.
       def register_mod(name, **opts, &block)
         Loom.log.debug2(self) { "registered mod => #{name}" }
 
+        # TODO: allow multiple mod_blocks per mod. Should probably stop
+        # dynamically defining :mod_block to do so. Current behavior, is the
+        # last register_mod w/ a mod_block wins. This is obvsiously shitty.
         if block_given?
-          # TODO: i forget what mod_blocks are. read through, remember, and
-          # document them.
           Loom.log.debug2(self) { "acting as mod_block => #{name}:#{block}" }
           define_method :mod_block, &block
         end

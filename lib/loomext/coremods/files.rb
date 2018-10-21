@@ -97,12 +97,15 @@ module LoomExt::CoreMods
         each_path do |p|
           file = shell.capture :cat, p
 
-          unless file.match(line)
+          matches = file.match(/^#{line}$/)
+          unless matches
             if sudo
               sudo_append(line)
             else
               append(line)
             end
+          else
+            Loom.log.debug(self) { "ensure_line match found: #{matches[0]}"}
           end
         end
       end
