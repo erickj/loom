@@ -124,6 +124,10 @@ module Loom::Shell
       execute cmd
     end
 
+    def upload(local_path, remote_path)
+      @sshkit_backend.upload! local_path, remote_path
+    end
+
     def execute(*cmd_parts, is_test: false, **cmd_opts)
       cmd_parts.compact!
       raise "empty command passed to execute" if cmd_parts.empty?

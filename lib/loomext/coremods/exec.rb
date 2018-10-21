@@ -47,4 +47,10 @@ module LoomExt::CoreMods
       raise FailError, message
     end
   end
+
+  class Upload < Loom::Mods::Module
+    register_mod :upload do |local_path, remote_path|
+      shell.upload local_path, remote_path
+    end
+  end
 end

@@ -3,6 +3,8 @@ module LoomExt::CoreMods
 
     register_mod :files
 
+    # TODO: document loom file statements like:
+    #     `loom.files("some", "different/paths").cat`
     def init_action(paths)
       @paths = [paths].flatten.compact
     end
@@ -42,6 +44,12 @@ module LoomExt::CoreMods
       def rm
         each_path do |p|
           shell.capture :rm, "-f", p
+        end
+      end
+
+      def mv(new_path)
+        each_path do |p|
+          shell.capture :mv, new_path
         end
       end
 
