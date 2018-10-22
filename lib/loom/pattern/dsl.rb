@@ -1,36 +1,37 @@
-=begin
-
 # TODO: DSL extensions:
-- Pattern+non_idempotent+ marks a pattern as explicitly not idempotent, this
-  let's additional warnings and checks to be added
-- A history module, store a log of each executed command, a hash of the .loom
-  file, and the requisite facts (the let declarations) for each executed pattern
-  on the host it executes. /var/log/loom/history? Create this log on startup.
-  -- add a new set of history commands through the CLI and a history
-     FactProvider exposing host/loom/pattern_slug execution stats.
-- Provide automatic command reversion support with a =Module= DSL that ties in
-  with local revision history.
-  -- allow Module actions/mods to define an "undo" command of itself given the
-     original inputs to the action
-  -- using the history to pull previous params (let defns) into a revert command.
-  -- usages of the raw shell, such as `loom.x` and `loom.capture` would be
-     unsupported. so would accesses to the fact_set in any before/after/pattern
-     blocks.
-  -- however patterns that only used let blocks, and used all "revertable"
-     module methods, could have automatic state reversion and integrity checking
-     managed.
-  -- best practices (encouraged through warnings) to be to heavily discourage
-     uses of loom.execute and loom.capture in .loom files and encourage all
-     accesses to fact_set be done in let expressions (enforce this maybe?)
-  -- Later... before/after hooks can ensure the entire loom execution sequence
-     was "revertable"
+# - Pattern+non_idempotent+ marks a pattern as explicitly not idempotent, this
+#   let's additional warnings and checks to be added
+# - A history module, store a log of each executed command, a hash of the .loom
+#   file, and the requisite facts (the let declarations) for each executed pattern
+#   on the host it executes. /var/log/loom/history? Create this log on startup.
+#   -- add a new set of history commands through the CLI and a history
+#      FactProvider exposing host/loom/pattern_slug execution stats.
+# - Provide automatic command reversion support with a =Module= DSL that ties in
+#   with local revision history.
+#   -- allow Module actions/mods to define an "undo" command of itself given the
+#      original inputs to the action
+#   -- using the history to pull previous params (let defns) into a revert command.
+#   -- usages of the raw shell, such as `loom.x` and `loom.capture` would be
+#      unsupported. so would accesses to the fact_set in any before/after/pattern
+#      blocks.
+#   -- however patterns that only used let blocks, and used all "revertable"
+#      module methods, could have automatic state reversion and integrity checking
+#      managed.
+#   -- best practices (encouraged through warnings) to be to heavily discourage
+#      uses of loom.execute and loom.capture in .loom files and encourage all
+#      accesses to fact_set be done in let expressions (enforce this maybe?)
+#   -- Later... before/after hooks can ensure the entire loom execution sequence
+#      was "revertable"
+
+=begin
 
 ## .loom File DSL
 
 See specs/test.loom for a valid .loom file.
 
-I've tried to take inspriation from the RSpec DSL for .loom, so hopefully it
-feels comfortable.
+I've tried to take inspriation from several ruby DSLs, including (but not
+limited to) RSpec, Thor, Commander, Sinatra... so hopefully it feels
+comfortable.
 
 Loom::Pattern::DSL is the mixin that defines the declarative API for all .loom
 file defined modules. It is included into Loom::Pattern by default. The outer
