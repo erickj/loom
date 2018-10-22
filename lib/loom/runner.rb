@@ -154,8 +154,8 @@ module Loom
             end
           end
         rescue IOError => e
-          # TODO: Try to patch SSHKit for a more specific error for unexpected SSH
-          # disconnections
+          # TODO: Try to patch SSHKit for a more specific error for unexpected
+          # SSH disconnections
           Loom.log.error "unexpected SSH disconnect => #{hostname}"
           Loom.log.debug e
           handle_host_failure_strategy hostname, e.message

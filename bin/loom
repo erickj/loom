@@ -24,6 +24,8 @@ inspired by [Python Fabric](http://www.fabfile.org/) with thanks and nods
 [Capistrano](https://capistranorb.com/).
 
 Try `loom weave uptime -H localhost` to see an example.
+
+Want to know how loom works? @see lib/loom/pattern/dsl.rb
 EOS
 
       global_option "-V", "--verbose", "Report verbose results" do |v|

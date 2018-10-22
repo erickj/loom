@@ -7,6 +7,8 @@ module LoomExt::CoreMods
   #
   # loom << :echo, "hello there"
   class Exec < Loom::Mods::Module
+    # TODO: add an "example" DSL to Loom::Mods::Module to automate
+    # documentation.
     register_mod :exec, :alias => [:x, :<<] do |*cmd, **opts|
       shell.execute *cmd, **opts
     end

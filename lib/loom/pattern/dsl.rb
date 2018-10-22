@@ -2,22 +2,17 @@
 
 # .loom File DSL
 
+See specs/test.loom for a valid .loom file.
+
+I've tried to take inspriation from the RSpec DSL for .loom, so hopefully it
+feels comfortable.
+
 Loom::Pattern::DSL is the mixin that defines the declarative API for all .loom
 file defined modules. It is included into Loom::Pattern by default. The outer
 most module that a .loom file declares has Loom::Pattern mixed in by
 default. Submodules must explicitly include Loom::Pattern, and will receive DSL.
 
-To follow the code path for .loom file loading see:
-
-    Loom::Runner#load
-      -> Loom::Pattern::Loader.load
-         -> Loom::Pattern::ReferenceSet.load_from_file
-            -> Loom::Pattern::ReferenceSet::Builder.create
-
-The Loom::Pattern::ReferenceSet::Builder creates a ReferenceSet from a .loom
-file. A ReferenseSet being a collection of references with uniquely named
-slugs. The slug of a reference is computed from the module namespace and
-instance method name. For example, given the following .loom file:
+For example, given the following .loom file:
 
 ``` ~ruby
 def top_level; end
@@ -42,13 +37,31 @@ It declares a reference set with slugs:
 
 Defining the same pattern slug twice raises a DuplicatPatternRef error.
 
-Module Inner inherits all +let+ declarations from its outer contexts, both ::
-(root) and ::Outer. +before+ hooks are run from a top-down module ordering,
-+after+ hooks are run bottom-up. For example, given the following .loom file:
+#### Code Details
+
+To follow the code path for .loom file loading see:
+
+    Loom::Runner#load
+      -> Loom::Pattern::Loader.load
+         -> Loom::Pattern::ReferenceSet.load_from_file
+            -> Loom::Pattern::ReferenceSet::Builder.create
+
+The Loom::Pattern::ReferenceSet::Builder creates a ReferenceSet from a .loom
+file. A ReferenseSet being a collection of references with uniquely named
+slugs. The slug of a reference is computed from the module namespace and
+instance method name.
+
+### `let`, `before`, and `after`
+
+Module::Inner, from above, inherits all +let+ declarations from its outer
+contexts, both :: (root) and ::Outer. +before+ hooks are run from a top-down
+module ordering, +after+ hooks are run bottom-up. For example, given the
+following .loom file:
 
 ``` ~ruby
 let(:var_1) { "v1 value" }
 let(:var_2) { "v2 value" }
+let(:var_3) { |facts| facts[:a] || facts[:b] }
 
 before { puts "runs first +before+" }
 after { puts "runs last +after+" }
@@ -65,10 +78,11 @@ module Submod
 end
 ```
 
-
 If running `loom submod:a_pattern`, then let declarations would declare values:
 
     { :var_1 => "submod value", :var_2 => "v2 value" }
+
+:var_3 would be set to either fact :a or fact :b.
 
 Each let value is effectively available as an `attr_reader` declaration from
 ::Submod#a_pattern. Before and After hook ordering with pattern execution would
@@ -83,18 +97,67 @@ look like:
 For the code that executes before hooks, pattern, after hooks see
 Loom::Pattern::Reference::RunContext#run.
 
+#### Code Details
+
 The Loom::Pattern::Reference::RunContext acts as the the binding object for each
-pattern slug. i.e. When running a pattern slug, the RunContext is the self
-object. Let definitions, before and after hooks, and fact maps are unique to
-each RunContext, for each RunContext they are defined in the
+pattern. i.e. RunContext is the self object for all the blocks defined in a loom
+file. Let definitions, before and after hooks, and fact maps are unique to each
+RunContext, for each RunContext they are defined in the
 Loom::Pattern::DefinitionContext. Each DefinitionContext is merged from it's
-parent module, see Loom::Pattern::DefinitionContext#merge_contexts for info.
+parent module, see Loom::Pattern::DefinitionContext#merge_contexts for
+info. Each pattern/host combo gets a unique RunContext instance via
+Loom::Runner+execute_pattern+ -> Loom::Pattern::Reference+call+.
 
 The RunContext#run method is the actual execution of the pattern. A pattern,
 before association to a RunContext instance is an unbound method. During
 RunContext#initialize the pattern is bound to the RunContext instance and
 executed during RunContext#run with the associated Loom::Shell::Api and
 Loom::Facts::FactSet as parameters.
+
+### `weave`
+
+The `weave` keyword allows aliasing a sequence of patterns a single
+name. Pattern execution will be flattened and run sequentially before or after
+any other patterns in the `$ loom` invocation.
+
+``` ~ruby
+pattern :step_1 { ... }
+pattern :step_2 { ... }
+
+weave :do_it, [ :step_1, :step_2 ]
+```
+
+This creates pattern :do_it, which when run `$ loom do_it` will run :step_1,
+:step_2. Recursive expansion is explicitly disallowed, only pattern names (not
+weaves), are allowed in the 2nd param of `weave`.
+
+#### Code Details
+
+Weave expansion to pattern slugs is accomplished by creating a
+Loom::Pattern::ExpandingReference via the Loom::Pattern::Loader+load+ path
+invoked via Loom::Runner+load+. Expansion happens on read via
+Loom::Pattern::Loader+patterns+, thus the list of patterns is constant
+throughout all phases of pattern execution.
+
+#### Pattern Execution Phases
+
+Once hosts and patterns are identified in earlier Loom::Runner phases,
+Loom::Runner+run_internal+, per host, initiates an SSH session and command
+execution phases of processing the .loom file. First phase is fact collection
+via +Loom::Facts.fact_set, see Loom::Facts::FactSet for createing, registering,
+and executing Loom::Facts::FactProviders.
+
+The inputs to fact collection are a Loom::Shell::Core, Loom::HostSpec, and
+Loom::Config
+
+After fact collection <should be verification... but it's TODO> is pattern block
+execution. See comments above for pattern execution details.
+
+## Custom Modules and FactProviders
+
+TODO
+
+See lib/loomext/coremods & lib/loomext/corefacts for examples.
 
 =end
 module Loom::Pattern
@@ -143,26 +206,6 @@ module Loom::Pattern
       define_pattern_internal(name) { |_, _| true }
     end
 
-    def define_pattern_internal(name, &block)
-      @pattern_methods ||= []
-      @pattern_method_map ||= {}
-      @pattern_descriptions ||= {}
-
-      method_name = name.to_sym
-
-      @pattern_methods << method_name
-      @pattern_method_map[method_name] = true
-      @pattern_descriptions[method_name] = @next_description
-      @next_description = nil
-
-      define_method method_name, &block
-    end
-
-    def hook(scope, &block)
-      @hooks ||= []
-      @hooks << Hook.new(scope, &block)
-    end
-
     def before(&block)
       hook :before, &block
     end
@@ -202,6 +245,27 @@ module Loom::Pattern
 
     def let_map
       @let_map || {}
+    end
+
+    private
+    def define_pattern_internal(name, &block)
+      @pattern_methods ||= []
+      @pattern_method_map ||= {}
+      @pattern_descriptions ||= {}
+
+      method_name = name.to_sym
+
+      @pattern_methods << method_name
+      @pattern_method_map[method_name] = true
+      @pattern_descriptions[method_name] = @next_description
+      @next_description = nil
+
+      define_method method_name, &block
+    end
+
+    def hook(scope, &block)
+      @hooks ||= []
+      @hooks << Hook.new(scope, &block)
     end
   end
 end
