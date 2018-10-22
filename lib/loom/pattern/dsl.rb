@@ -1,6 +1,31 @@
 =begin
 
-# .loom File DSL
+# TODO: DSL extensions:
+- Pattern+non_idempotent+ marks a pattern as explicitly not idempotent, this
+  let's additional warnings and checks to be added
+- A history module, store a log of each executed command, a hash of the .loom
+  file, and the requisite facts (the let declarations) for each executed pattern
+  on the host it executes. /var/log/loom/history? Create this log on startup.
+  -- add a new set of history commands through the CLI and a history
+     FactProvider exposing host/loom/pattern_slug execution stats.
+- Provide automatic command reversion support with a =Module= DSL that ties in
+  with local revision history.
+  -- allow Module actions/mods to define an "undo" command of itself given the
+     original inputs to the action
+  -- using the history to pull previous params (let defns) into a revert command.
+  -- usages of the raw shell, such as `loom.x` and `loom.capture` would be
+     unsupported. so would accesses to the fact_set in any before/after/pattern
+     blocks.
+  -- however patterns that only used let blocks, and used all "revertable"
+     module methods, could have automatic state reversion and integrity checking
+     managed.
+  -- best practices (encouraged through warnings) to be to heavily discourage
+     uses of loom.execute and loom.capture in .loom files and encourage all
+     accesses to fact_set be done in let expressions (enforce this maybe?)
+  -- Later... before/after hooks can ensure the entire loom execution sequence
+     was "revertable"
+
+## .loom File DSL
 
 See specs/test.loom for a valid .loom file.
 
@@ -61,7 +86,7 @@ following .loom file:
 ``` ~ruby
 let(:var_1) { "v1 value" }
 let(:var_2) { "v2 value" }
-let(:var_3) { |facts| facts[:a] || facts[:b] }
+let(:var_3, "otherwise") { |facts| facts[:a] || facts[:b] }
 
 before { puts "runs first +before+" }
 after { puts "runs last +after+" }
@@ -82,10 +107,15 @@ If running `loom submod:a_pattern`, then let declarations would declare values:
 
     { :var_1 => "submod value", :var_2 => "v2 value" }
 
-:var_3 would be set to either fact :a or fact :b.
+:var_3 would be set to either fact :a or fact :b. If the let expression
+evaluates to nil?, then "otherwise" will be used as a default.
 
 Each let value is effectively available as an `attr_reader` declaration from
-::Submod#a_pattern. Before and After hook ordering with pattern execution would
+::Submod#a_pattern. Because the attr_reader is defined on the RunContext scope
+object, let expressions are available all before/after hooks and pattern
+expresions.
+
+Before and After hook ordering with pattern execution would
 look like:
 
     => runs first +before+
@@ -113,6 +143,9 @@ before association to a RunContext instance is an unbound method. During
 RunContext#initialize the pattern is bound to the RunContext instance and
 executed during RunContext#run with the associated Loom::Shell::Api and
 Loom::Facts::FactSet as parameters.
+
+See Loom::Pattern::DefinitionContext for evaluation of `let` blocks and
+before/after context ordering.
 
 ### `weave`
 
@@ -148,16 +181,33 @@ via +Loom::Facts.fact_set, see Loom::Facts::FactSet for createing, registering,
 and executing Loom::Facts::FactProviders.
 
 The inputs to fact collection are a Loom::Shell::Core, Loom::HostSpec, and
-Loom::Config
+Loom::Config. Fact collection must be FAST and idempotent (or as reasonably
+possible). No network requests should be made during fact colleciton. Fact
+collection is done prior to EACH pattern/host combination in order to ensure
+having the newest facts from prevoius pattern executions.
 
-After fact collection <should be verification... but it's TODO> is pattern block
-execution. See comments above for pattern execution details.
+After fact collection is pattern block execution, including before and after
+block execution. See comments above for pattern code pointers and other details.
 
-## Custom Modules and FactProviders
+## Decorating the Loom Object with Custom Modules and FactProviders
 
 TODO
 
 See lib/loomext/coremods & lib/loomext/corefacts for examples.
+
+## Facts and Inventory
+
+TODO
+
+## Config
+
+TODO
+
+## Logger
+
+TODO
+
+##
 
 =end
 module Loom::Pattern
@@ -184,9 +234,11 @@ module Loom::Pattern
       @facts = yield_result if yield_result.is_a? Hash
     end
 
-    def let(name, &block)
+    def let(name, default: nil, &block)
+      raise "malformed let expression: missing block" unless block_given?
+
       @let_map ||= {}
-      @let_map[name.to_sym] = block
+      @let_map[name.to_sym] = LetMapEntry.new default, &block
     end
 
     def pattern(name, &block)
@@ -266,6 +318,14 @@ module Loom::Pattern
     def hook(scope, &block)
       @hooks ||= []
       @hooks << Hook.new(scope, &block)
+    end
+  end # DSL
+
+  class LetMapEntry
+    attr_reader :default, :block
+    def initialize(default, &block)
+      @default = default
+      @block = block
     end
   end
 end

@@ -6,6 +6,8 @@ module Loom::Pattern
   # includes all contexts of parent modules.
   class DefinitionContext
 
+    NilLetValueError = Class.new Loom::LoomError
+
     def initialize(pattern_module, parent_context=nil)
       @fact_map = pattern_module.facts.dup
       @let_map = pattern_module.let_map.dup
@@ -26,7 +28,9 @@ module Loom::Pattern
       host_fact_set.merge merged_fact_map
     end
 
-    # TODO: #define_let_readers is a TERRIBLE name. Rename this method.
+    # TODO: #define_let_readers is a TERRIBLE name. Rename this method. Also
+    # consider moving the instance_exec call to inside RunContext, it's a bit
+    # misplaced here.
     #
     # The method is called by Reference#call with the Reference::RunContext
     # instance. The "let" defined local declarations are added as method
@@ -34,9 +38,16 @@ module Loom::Pattern
     # let definitions, merged from the associated module, up the namespace
     # graph, allowing for inheriting and overriding +let+ declarations.
     def define_let_readers(scope_object, fact_set)
-      @merged_let_map.each do |let_key, block|
-        raise "no let block" unless block
-        value = scope_object.instance_exec fact_set, &block
+      @merged_let_map.each do |let_key, let_map_entry|
+        Loom.log.debug { "evaluating let expression[:#{let_key}]" }
+        value = scope_object.instance_exec fact_set, &let_map_entry.block
+        value = value.nil? ? let_map_entry.default : value
+        Loom.log.debug1(self) { "let[:#{let_key}] => #{value}" }
+
+        if value.nil? || value.equal?(Loom::Facts::EMPTY)
+          Loom.log.e "value of let expression[:#{let_key}] is nil"
+          raise NilLetValueError, let_key
+        end
         scope_object.define_singleton_method(let_key) { value }
       end
     end

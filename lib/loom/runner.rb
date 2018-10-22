@@ -59,12 +59,21 @@ module Loom
         exit code
       rescue PatternExecutionError => e
         num_patterns_failed = @run_failures.size
-        Loom.log.error "error executing #{num_patterns_failed} patterns => #{e}"
-        Loom.log.debug e.backtrace.join "\n"
+        Loom.log.error "error executing #{num_patterns_failed} patterns => #{e}, run with -d for more"
+        Loom.log.debug e.backtrace.join "\n\t"
         # TODO: I think the max return code is 255. Cap this if so.
         exit 100 + num_patterns_failed
+      rescue SSHKit::Runner::ExecuteError => e
+        Loom.log.error "wrapped SSHKit::Runner::ExecuteError, run with -d for more"
+        Loom.log.error e.cause
+        Loom.log.debug e.cause.backtrace.join "\n\t"
+        Loom.log.debug1(self) { "Original error:" }
+        Loom.log.debug1(self) { e.inspect }
+        Loom.log.debug1(self) { e.backtrace.join "\n\t" }
+        exit 97
       rescue Loom::LoomError => e
-        Loom.log.error "loom error => #{e.inspect}"
+        Loom.log.error "Loom::LoomError => #{e.inspect}, run with -d for more"
+        Loom.log.debug e.cause.backtrace.join "\n\t"
         exit 98
       rescue => e
         Loom.log.fatal "fatal error => #{e.inspect}"

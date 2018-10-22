@@ -41,8 +41,12 @@ EOS
         end
       end
 
-      global_option "--dbg [N]", Integer,
-                    "Enable deep debug logging, where N is 0-6, implies --verbose" do |n|
+      global_option("--dbg [N]", Integer, <<EOS
+Enables deep debug logging, where N is 1-6, implies --verbose. The difference
+between -d and --dbg is the former is intended for site.loom authors and the
+latter for authors looking to inspect loom internals.
+EOS
+        ) do |n|
         raise "N must be greater than 0" if n < 0
         Loom.configure do |c|
           c.log_level = n * -1

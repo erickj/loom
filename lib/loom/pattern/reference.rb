@@ -19,8 +19,12 @@ module Loom::Pattern
       run_context = RunContext.new @unbound_method, @definition_ctx
 
       fact_set = @definition_ctx.fact_set host_fact_set
-      Loom.log.debug5(self) { "fact set for pattern execution => #{fact_set.facts}" }
+      Loom.log.debug5(self) {
+        "fact set for pattern execution => #{fact_set.facts}" }
 
+      # TODO: wrap up this fact_set in a delegator/facade/proxy to eliminate the
+      # .loom file from directly accessing it. Add logging and deprecation
+      # warnings there.... like FactSet+hostname+ currently.
       @definition_ctx.define_let_readers run_context, fact_set
 
       begin

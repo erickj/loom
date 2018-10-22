@@ -1,7 +1,7 @@
 module Loom::Facts
 
-  EMPTY_HASH = {}
-  class << EMPTY_HASH
+  EMPTY = {}
+  class << EMPTY
     def [](*args)
       self
     end
@@ -86,6 +86,17 @@ module Loom::Facts
     end
 
     def hostname
+      Loom.log.debug(<<NB
+`facts.hostname ` is actually the name by which SSH knows the host, not
+necessarily the actual host name. e.g. it may be an ip address, /etc/hosts
+alias, or ssh config alias. Use `facts.sshname` for the same value without this
+warning.
+NB
+        )
+      sshname
+    end
+
+    def sshname
       host_spec.hostname
     end
 
@@ -93,7 +104,7 @@ module Loom::Facts
       v = @fact_map[fact_name.to_sym]
       dup = v.dup rescue v
       if dup.nil?
-        EMPTY_HASH
+        EMPTY
       else
         dup
       end
