@@ -22,6 +22,10 @@
 #      accesses to fact_set be done in let expressions (enforce this maybe?)
 #   -- Later... before/after hooks can ensure the entire loom execution sequence
 #      was "revertable"
+# - A mechanism to allow mods to register CLI flags and actions. Using an action predicate
+#   mechanisms can add flags at the global or action levels. All CLI flags set config values.
+#   -- Mods can also register for action namespaces similar to git. This is consistent with mod
+#      namespaces on the loom object.
 
 =begin
 

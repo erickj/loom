@@ -17,6 +17,8 @@ module LoomExt::CoreMods
 
   class ChangeDirectory < Loom::Mods::Module
     register_mod :change_directory, :alias => :cd do |path, &block|
+      # TODO: I think this block binding is to the Module instead of the RunContext. Find out and
+      # fix it.
       shell.cd path, &block
     end
   end
@@ -35,6 +37,7 @@ module LoomExt::CoreMods
 
   class Sudo < Loom::Mods::Module
     register_mod :sudo do |user: :root, cmd: nil, &block|
+      # TODO: ditto re: binding to Module instead of RunContext.
       shell.sudo user, cmd, &block
     end
   end

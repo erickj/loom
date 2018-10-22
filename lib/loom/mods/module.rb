@@ -19,10 +19,9 @@ module Loom::Mods
       @mods = shell.mod_loader
       @loom_config = loom_config
 
-      # The action proxy is a facade for the mod provided to patterns by the
-      # ShellApi (the 'loom' object). The ShellApi calls back to the mod_loader
-      # on method missing which instantiates a new Module object and returns the
-      # action_proxy.
+      # The action proxy is a facade (or is it a proxy? i don't know) for the mod provided to
+      # patterns by the ShellApi (the 'loom' object). The ShellApi calls back to the mod_loader on
+      # method missing which instantiates a new Module object and returns the action_proxy.
       @action_proxy = self.class.action_proxy self, shell.shell_api
       @action_args = nil
       @action_block = nil
