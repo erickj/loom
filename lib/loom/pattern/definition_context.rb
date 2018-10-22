@@ -45,7 +45,7 @@ module Loom::Pattern
         Loom.log.debug1(self) { "let[:#{let_key}] => #{value}" }
 
         if value.nil? || value.equal?(Loom::Facts::EMPTY)
-          Loom.log.e "value of let expression[:#{let_key}] is nil"
+          Loom.log.error "value of let expression[:#{let_key}] is nil"
           raise NilLetValueError, let_key
         end
         scope_object.define_singleton_method(let_key) { value }
