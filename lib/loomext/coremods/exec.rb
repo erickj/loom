@@ -1,3 +1,4 @@
+# TODO: rename this file -> oneliners.rb
 module LoomExt::CoreMods
 
   FailError = Class.new Loom::ExecutionError

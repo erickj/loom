@@ -40,7 +40,7 @@ module LoomExt::CoreMods
       end
 
       def install(pkg_name)
-        loom << "gem install #{pkg_name}"
+        loom.x :gem, :install, pkg_name
       end
     end
 

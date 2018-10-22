@@ -83,8 +83,9 @@ module LoomExt::CoreFacts
       facts = {}
       os_release.each_line do |l|
         l = l.strip
+        next if l.empty?
         key, value = l.split("=")
-        unquoted_value = value.gsub(/^"(.+)"$/) { |m| $1 }
+        unquoted_value = value.gsub(/^"(.+)"$/) { |m| $1 } rescue ""
         facts[key.to_sym] = unquoted_value
       end
       facts
