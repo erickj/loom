@@ -78,6 +78,10 @@ module Loom
       rescue => e
         Loom.log.fatal "fatal error => #{e.inspect}"
         Loom.log.fatal e.backtrace.join "\n\t"
+
+        loom_files = @loom_config.files.loom_files
+        loom_errors = e.backtrace.select { |line| line =~ /(#{loom_files.join("|")})/ }
+        Loom.log.error "Loom file errors: \n\t" + loom_errors.join("\n\t")
         exit 99
       end
     end

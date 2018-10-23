@@ -1,4 +1,6 @@
 # TODO: DSL extensions:
+# - a way to test and verify pattern execution.... I still don't trust this enough. this starts with
+#   fixing error reporting.
 # - Pattern+non_idempotent+ marks a pattern as explicitly not idempotent, this
 #   let's additional warnings and checks to be added
 # - A history module, store a log of each executed command, a hash of the .loom
@@ -29,6 +31,14 @@
 #   -- Best way is to migrate loom/mods/module and loom/mods/action_proxy into base classes of
 #      themselves. The isolate the shell specific behavior into a subclass of each to preserve the
 #      current behavior. A new "cli" module and "cli" action proxy would enable the implementation.
+# - Add a phase to the pattern execution sequence to collect calls to factset and loom
+#   objects. Results collected from this ""pre-execute"" can be analyzed for errors, optimization,
+#   success assertions, verification, etc. The loom file then executes in 2 passes, analyze &
+#   execute.
+#   -- pre-fact collection - inject the facts (or loom) object as a recorder (like a mock in record mode)
+#      instead of the factual fact set. no need to change any loom files.
+#   -- only run fact providers which are accessed in the pattern set
+#   -- only load modules accessed in the pattern set
 
 =begin
 
@@ -180,7 +190,7 @@ invoked via Loom::Runner+load+. Expansion happens on read via
 Loom::Pattern::Loader+patterns+, thus the list of patterns is constant
 throughout all phases of pattern execution.
 
-#### Pattern Execution Phases
+#### Pattern Execution Sequence
 
 Once hosts and patterns are identified in earlier Loom::Runner phases,
 Loom::Runner+run_internal+, per host, initiates an SSH session and command

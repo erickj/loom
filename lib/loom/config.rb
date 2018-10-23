@@ -12,6 +12,7 @@ module Loom
     CONFIG_VARS = {
       :loom_search_paths => ['/etc/loom', File.join(ENV['HOME'], '.loom'), './.loom'],
       :loom_files => ['site.loom'],
+      :loom_file_patterns => ['*.loom'],
 
       :inventory_all_hosts => false,
       :inventory_hosts => [],
@@ -49,6 +50,8 @@ module Loom
     end
     alias_method :dump, :to_yaml # aliased to dump for debugging purposes
 
+    # TODO: disallow CONFIG_VAR properties named after Config methods.... like
+    # files. this is shitty, but I don't want to do a larger change.
     def files
       @file_manager
     end
@@ -68,11 +71,10 @@ module Loom
     private
     class FileManager
 
-      LOOM_FILE_PATTERNS = ["*.loom"]
-
       def initialize(config)
         @loom_search_paths = config.loom_search_paths
         @loom_files = config.loom_files
+        @loom_file_patterns = config.loom_file_patterns
       end
 
       def find(glob_patterns)
@@ -80,7 +82,7 @@ module Loom
       end
 
       def loom_files
-        [@loom_files + search_loom_paths(LOOM_FILE_PATTERNS)].flatten.uniq
+        [@loom_files + search_loom_paths(@loom_file_patterns)].flatten.uniq
       end
 
       private
