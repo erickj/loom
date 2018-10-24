@@ -15,6 +15,12 @@ module LoomExt::CoreMods
     end
   end
 
+  class ExecEcho < Loom::Mods::Module
+    register_mod :exec_echo, :alias => [:xe, :"<<e"] do |*cmd, **opts|
+      shell.capture *cmd, **opts
+    end
+  end
+
   class ChangeDirectory < Loom::Mods::Module
     register_mod :change_directory, :alias => :cd do |path, &block|
       # TODO: I think this block binding is to the Module instead of the RunContext. Find out and

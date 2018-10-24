@@ -7,6 +7,7 @@
 #
 # 1. base64 encode an arbitrary shell script, this is the encoded
 #    script
+# TODO[P0]: this should be a checksum for the original script!!! Check the code.
 # 2. get a checksum for the encoded script
 # 3. send the encoded script and checksum to a shell in another
 #    process (local or remote) to invoke the encoded script via this

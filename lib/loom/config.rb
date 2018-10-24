@@ -14,6 +14,11 @@ module Loom
       :loom_files => ['site.loom'],
       :loom_file_patterns => ['*.loom'],
 
+      :loomfile_autoloads => [
+        'loomext/corefacts',
+        'loomext/coremods',
+      ],
+
       :inventory_all_hosts => false,
       :inventory_hosts => [],
       :inventory_groups => [],

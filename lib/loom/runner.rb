@@ -118,6 +118,10 @@ module Loom
       pattern_loader = Loom::Pattern::Loader.load @loom_config
       @pattern_refs = pattern_loader.patterns @pattern_slugs
 
+      @loom_config[:loomfile_autoloads].each do |path|
+        Loom.log.debug { "autoloading: #{path}" }
+        require path
+      end
       @mod_loader = Loom::Mods::ModLoader.new @loom_config
     end
 
