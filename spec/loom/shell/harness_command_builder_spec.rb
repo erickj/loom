@@ -1,4 +1,4 @@
-describe Loom::Shell::HarnessCommandBuilder do
+xdescribe Loom::Shell::HarnessCommandBuilder do
 
   let(:cmd) do
     <<CMD

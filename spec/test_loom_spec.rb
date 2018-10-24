@@ -34,7 +34,7 @@ require 'open3'
 #       /home/erick/.gem/ruby/gems/sshkit-1.11.3/lib/sshkit/backends/abstract.rb:141:in `create_command_and_execute'
 #       /home/erick/workspace/src/loom/lib/loom/shell.rb:91:in `execute'
 
-describe "spec/test.loom file" do
+xdescribe "spec/test.loom file" do
 
   let(:runloom) { File.join File.dirname(__FILE__), 'runloom.sh' }
 
