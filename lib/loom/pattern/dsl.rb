@@ -1,6 +1,6 @@
 # TODO: DSL extensions:
-# - a way to test and verify pattern execution.... I still don't trust this enough. this starts with
-#   fixing error reporting.
+# - a way to test and verify pattern execution.... I still don't trust this
+#   enough. this starts with fixing error reporting.
 # - Pattern+non_idempotent+ marks a pattern as explicitly not idempotent, this
 #   let's additional warnings and checks to be added
 # - A history module, store a log of each executed command, a hash of the .loom
@@ -39,12 +39,21 @@
 #      instead of the factual fact set. no need to change any loom files.
 #   -- only run fact providers which are accessed in the pattern set
 #   -- only load modules accessed in the pattern set
+# - Replace Pattern "mods" and "mod specs" in Loom::Pattern::ReferenceSet with usages of a builder
+#   instead. Currently the internal data model in ReferenceSet is confusing, but luckily it's the
+#   only client of pattern modules, that have used Loom::Pattern::DSL. Change calls to
+#   DSL#pattern/report/weave (anythin else that creates a pattern) to add a new PatternBuilder to
+#   the module. Use the builder to implement the TODO above ("Add a phase..."). Implement analysis
+#   on the builder.
 
 =begin
 
 ## .loom File DSL
 
-See specs/test.loom for a valid .loom file.
+See:
+* spec/test.loom for a valid .loom file.
+* spec/loom/pattern/dsl_spec.rb for other examples
+
 
 I've tried to take inspriation from several ruby DSLs, including (but not
 limited to) RSpec, Thor, Commander, Sinatra... so hopefully it feels
@@ -58,7 +67,7 @@ default. Submodules must explicitly include Loom::Pattern, and will receive DSL.
 For example, given the following .loom file:
 
 ``` ~ruby
-def top_level; end
+pattern :cmd do |loom, facts| puts loom.xe :uptime end
 
 module Outer
 
@@ -93,6 +102,11 @@ The Loom::Pattern::ReferenceSet::Builder creates a ReferenceSet from a .loom
 file. A ReferenseSet being a collection of references with uniquely named
 slugs. The slug of a reference is computed from the module namespace and
 instance method name.
+
+### `report`
+
+Use `report` to create a pattern that outputs a fact, other value, or result of
+a block to yaml, json, or any other format.
 
 ### `let`, `before`, and `after`
 
@@ -228,7 +242,13 @@ TODO
 ##
 
 =end
+
+require "yaml"
+require "json"
+
 module Loom::Pattern
+
+  PatternDefinitionError = Class.new Loom::LoomError
 
   # TODO: clarify this DSL to only export:
   # - description
@@ -262,6 +282,38 @@ module Loom::Pattern
     def pattern(name, &block)
       Loom.log.debug1(self) { "defining pattern => #{name}" }
       define_pattern_internal(name, &block)
+    end
+
+    ##
+    # @param format[:yaml|:json|:raw] default is :yaml
+    def report(name, format: :yaml, &block)
+      Loom.log.debug1(self) { "defining reporting pattern => #{name}" }
+      define_pattern_internal(name) do |loom, facts|
+        # TODO: I don't like all of this logic in the dsl.
+        result = if block_given?
+                   Loom.log.debug(self) { "report[#{name}] from block" }
+                   self.instance_exec(loom, facts, &block)
+                 elsif !Loom::Facts.is_empty?(facts[name])
+                   Loom.log.debug(self) { "report[#{name}] from facts[#{name}]" }
+                   facts[name]
+                 elsif self.respond_to?(name) && !self.send(name).nil?
+                   Loom.log.debug(self) { "report[#{name}] from let{#{name}}" }
+                   self.send name
+                 else
+                   err_msg = "no facts to report for fact[#{name}:#{name.class}]"
+                   raise PatternDefinitionError, err_msg
+                 end
+
+        puts case format
+             when :yaml then result.to_yaml
+             when :json then result.to_json
+             when :raw then result
+             else
+               err_msg = "invalid report format: #{format.inspect}"
+               err_msg << "valid options: yaml,json,raw"
+               raise PatternDefinitionError, err_msg
+             end
+      end
     end
 
     def weave(name, pattern_slugs)
@@ -318,7 +370,7 @@ module Loom::Pattern
     end
 
     private
-    def define_pattern_internal(name, &block)
+    def define_pattern_internal(name, &loom_file_block)
       @pattern_methods ||= []
       @pattern_method_map ||= {}
       @pattern_descriptions ||= {}
@@ -330,7 +382,17 @@ module Loom::Pattern
       @pattern_descriptions[method_name] = @next_description
       @next_description = nil
 
-      define_method method_name, &block
+      ##
+      # ```ruby
+      # pattern :xyz do |loom, facts|
+      #   loom.x :dostuff
+      # end
+      # ```
+      # Patterns declared in the .loom file are defined here:
+      define_method method_name do |loom, facts|
+        Loom.log.debug2(self) { "calling .loom file pattern: #{name}" }
+        self.instance_exec(loom, facts, &loom_file_block)
+      end
     end
 
     def hook(scope, &block)

@@ -12,7 +12,7 @@ describe Loom::Pattern::DSL do
   end
 
   before do
-    # bit buckets the logs
+    # intercept logs
     @logger_io = StringIO.new
     Loom.configure do |config|
       config.log_device = @logger_io
@@ -148,6 +148,55 @@ EOS
       inner_pattern.call fake_shell, a_fact_set
       expect(fake_shell.cmd_execution_args.first).to(
         eql [:outer, :inner])
+    end
+  end
+
+  context "#report" do
+
+    let(:report_fact_set) { a_fact_set.merge :the_report_facts => [1,2,3] }
+    let(:loom_file) do
+<<EOS
+  let(:the_let_facts) { [:a, :b] }
+
+  report :the_report_facts
+  report :the_let_facts
+
+  report :the_other_facts do
+    { :some => :other, :stuff => :ok }
+  end
+
+  report :by_another_form, format: :json do
+    { :other => :data }
+  end
+EOS
+    end
+
+    let(:new_stdio) { StringIO.new }
+    before { $stdout = new_stdio }
+    after { $stdout = STDOUT }
+
+    it 'prints the called report by fact value' do
+      @reference_set['the_report_facts'].call fake_shell, report_fact_set
+      report_output = new_stdio.string
+      expect(report_output).to eql [1,2,3].to_yaml
+    end
+
+    it 'prints the called report by let value' do
+      @reference_set['the_let_facts'].call fake_shell, report_fact_set
+      report_output = new_stdio.string
+      expect(report_output).to eql [:a, :b].to_yaml
+    end
+
+    it 'prints the given report block' do
+      @reference_set['the_other_facts'].call fake_shell, report_fact_set
+      report_output = new_stdio.string
+      expect(report_output).to eql({:some => :other, :stuff => :ok}.to_yaml)
+    end
+
+    it 'prints data in different formats' do
+      @reference_set['by_another_form'].call fake_shell, report_fact_set
+      report_output = new_stdio.string
+      expect(report_output.strip).to eql('{"other":"data"}')
     end
   end
 
