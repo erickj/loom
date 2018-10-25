@@ -28,7 +28,7 @@ describe Loom::Pattern::DSL do
   context "pattern basics" do
 
     let(:loom_file) do
-<<EOS
+<<RB_LOOM
   desc "a description of pattern_under_test"
   pattern :pattern_under_test do |loom, facts|
     loom.do_outer_thing
@@ -42,7 +42,7 @@ describe Loom::Pattern::DSL do
       loom.do_inner_thing
     end
   end
-EOS
+RB_LOOM
     end
 
     it "defines a Pattern::Reference" do
@@ -67,7 +67,7 @@ EOS
   context "#let" do
 
     let(:loom_file) do
-<<EOS
+<<RB_LOOM
   let(:let_var_1) { "let var 1"}
   let(:let_var_2) { "let var 2"}
 
@@ -92,7 +92,7 @@ EOS
       loom.do_inner_thing(let_var_1, let_var_2, let_var_3)
     end
   end
-EOS
+RB_LOOM
     end
 
     it "defines :let declartions at the top level" do
@@ -117,7 +117,7 @@ EOS
   context "#with_facts" do
 
     let(:loom_file) do
-<<EOS
+<<RB_LOOM
   with_facts :outer_fact => :outer
 
   desc "a description of pattern_under_test"
@@ -135,7 +135,7 @@ EOS
       loom.do_inner_thing(facts[:outer_fact], facts[:inner_fact])
     end
   end
-EOS
+RB_LOOM
     end
 
     it "defines fact sets at the top level" do
@@ -155,7 +155,7 @@ EOS
 
     let(:report_fact_set) { a_fact_set.merge :the_report_facts => [1,2,3] }
     let(:loom_file) do
-<<EOS
+<<RB_LOOM
   let(:the_let_facts) { [:a, :b] }
 
   report :the_report_facts
@@ -168,7 +168,7 @@ EOS
   report :by_another_form, format: :json do
     { :other => :data }
   end
-EOS
+RB_LOOM
     end
 
     let(:new_stdio) { StringIO.new }
@@ -203,7 +203,7 @@ EOS
   context "hooks" do
 
     let(:loom_file) do
-<<EOS
+<<RB_LOOM
 
   let(:hook_order) { [] }
 
@@ -228,7 +228,7 @@ EOS
       loom.do_inner_thing(hook_order)
     end
   end
-EOS
+RB_LOOM
     end
 
     it "executes outer before hooks first and after hooks last" do

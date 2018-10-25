@@ -19,6 +19,7 @@ module Loom::Shell
       @shell.local.shell_api
     end
 
+    # This is the entry point for `loom.foo` calls from .loom files.
     def method_missing(name, *args, &block)
       Loom.log.debug3(self) { "shell api => #{name} #{args} #{block}" }
       # TODO: The relationship between shell and mod_loader seems leaky here, a
@@ -42,6 +43,7 @@ module Loom::Shell
     def method_missing(name, *args, &block)
       @cmd_executions.push name
       @cmd_execution_args.push args
+      self
     end
   end
 
