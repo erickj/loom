@@ -1,5 +1,11 @@
 module Loom::Facts
 
+  class << self
+    def is_empty?(fact_set)
+      EMPTY.equal? fact_set
+    end
+  end
+
   EMPTY = {}
   class << EMPTY
     def [](*args)
@@ -104,7 +110,7 @@ NB
       v = @fact_map[fact_name.to_sym]
       dup = v.dup rescue v
       if dup.nil?
-        EMPTY
+        Loom::Facts::EMPTY
       else
         dup
       end
