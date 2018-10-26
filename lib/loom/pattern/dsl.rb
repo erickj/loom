@@ -258,6 +258,19 @@ module Loom::Pattern
   # other methods are utility methods used to process and run patterns.
   module DSL
 
+    def pattern_mod_init
+      return if @inited
+
+      @pattern_map = {}
+      @fact_map = {}
+      @let_map = {}
+      @weave_slugs = {}
+      @hooks = []
+      @next_description = nil
+
+      @inited = true
+    end
+
     loom_accessor :namespace
 
     def description(description)
@@ -266,29 +279,24 @@ module Loom::Pattern
     alias_method :desc, :description
 
     def with_facts(**new_facts, &block)
-      @facts ||= {}
-      @facts.merge! new_facts
-      yield_result = yield @facts if block_given?
-      @facts = yield_result if yield_result.is_a? Hash
+      @fact_map.merge! new_facts
+      yield_result = yield @fact_map if block_given?
+      @fact_map = yield_result if yield_result.is_a? Hash
     end
 
     def let(name, default: nil, &block)
       raise "malformed let expression: missing block" unless block_given?
-
-      @let_map ||= {}
       @let_map[name.to_sym] = LetMapEntry.new default, &block
     end
 
     def pattern(name, &block)
-      Loom.log.debug1(self) { "defining pattern => #{name}" }
-      define_pattern_internal(name, &block)
+      define_pattern_internal(name, kind: :pattern, &block)
     end
 
     ##
     # @param format[:yaml|:json|:raw] default is :yaml
     def report(name, format: :yaml, &block)
-      Loom.log.debug1(self) { "defining reporting pattern => #{name}" }
-      define_pattern_internal(name) do |loom, facts|
+      define_pattern_internal(name, kind: :report) do |loom, facts|
         # TODO: I don't like all of this logic in the dsl.
         result = if block_given?
                    Loom.log.debug(self) { "report[#{name}] from block" }
@@ -318,15 +326,13 @@ module Loom::Pattern
     end
 
     def weave(name, pattern_slugs)
-      Loom.log.debug1(self) { "defining weave => #{name}" }
-      @weave_slugs ||= {}
       @weave_slugs[name.to_sym] = pattern_slugs.map { |s| s.to_s }
 
       unless @next_description
         @next_description = "Weave runs patterns: %s" % pattern_slugs.join(", ")
       end
 
-      define_pattern_internal(name) { |_, _| true }
+      define_pattern_internal(name, kind: :weave) { true }
     end
 
     def before(&block)
@@ -338,51 +344,67 @@ module Loom::Pattern
     end
 
     def weave_slugs
-      @weave_slugs || {}
+      @weave_slugs
     end
 
     def is_weave?(name)
-      !!weave_slugs[name]
+      @pattern_map[name].is_weave? rescue false
     end
 
     def pattern_methods
-      @pattern_methods || []
+      @pattern_map.values.map &:name
     end
 
     def pattern_description(name)
-      @pattern_descriptions[name]
+      @pattern_map[name].description
     end
 
     def pattern_method(name)
-      raise UnknownPatternMethod, name unless @pattern_method_map[name]
+      raise UnknownPatternMethod, name unless @pattern_map[name.intern]
       instance_method name
     end
 
     def hooks
-      @hooks || []
+      @hooks
     end
 
     def facts
-      @facts || {}
+      @fact_map
     end
 
     def let_map
-      @let_map || {}
+      @let_map
     end
 
     private
-    def define_pattern_internal(name, &loom_file_block)
-      @pattern_methods ||= []
-      @pattern_method_map ||= {}
-      @pattern_descriptions ||= {}
+    # TODO: Let mods introduce new pattern handlers. A pattern is effectively a
+    # named wrapper around a pattern execution block. This would be an advanced
+    # usage when before and after blocks aren't scalable. It could also provided
+    # additional filtering for pattern selection at weave time.
+    def define_pattern_internal(name, kind: :pattern, &loom_file_block)
+      unless block_given?
+        raise PatternDefinitionError, "missing block for pattern #{name}"
+      end
+      unless Pattern::KINDS[kind]
+        raise "unknown pattern kind: #{kind}"
+      end
 
-      method_name = name.to_sym
-
-      @pattern_methods << method_name
-      @pattern_method_map[method_name] = true
-      @pattern_descriptions[method_name] = @next_description
+      desc = @next_description
+      unless desc.is_a?(String) || desc.nil?
+        raise PatternDefinitionError, "description must be a string: #{desc.class}"
+      end
       @next_description = nil
+      name = name.intern
 
+      Loom.log.debug(self) { "defined .loom pattern[#{kind}]: #{name}" }
+      @pattern_map[name] =
+        Pattern.new name: name, description: desc, kind: kind, &loom_file_block
+
+
+      # TODO defining the method on the pattern ::Module is unnecessary, I just
+      # unbind it later on and rebind it to the
+      # Loom::Pattern::Reference::RunContext, so all I really need to do is
+      # cache the original block.
       ##
       # ```ruby
       # pattern :xyz do |loom, facts|
@@ -390,14 +412,13 @@ module Loom::Pattern
       # end
       # ```
       # Patterns declared in the .loom file are defined here:
-      define_method method_name do |loom, facts|
-        Loom.log.debug2(self) { "calling .loom file pattern: #{name}" }
+      define_method name do |loom, facts|
+        Loom.log.debug(self) { "calling .loom file #{kind}: #{name}" }
         self.instance_exec(loom, facts, &loom_file_block)
       end
     end
 
     def hook(scope, &block)
-      @hooks ||= []
       @hooks << Hook.new(scope, &block)
     end
   end # DSL

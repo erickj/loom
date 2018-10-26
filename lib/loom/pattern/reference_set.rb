@@ -3,6 +3,9 @@
 # into a reference set. There's also a lot of dark magic w/ generating
 # stacktraces to get the correct .loom file line (but I forget if that's done
 # here or in pattern/reference.rb maybe?)
+
+# TODO: Eliminate the use of the word "mod" from this file, (I believe) every
+# use of the word "mod" refers to ::Module, NOT Loom::Mod::Module.
 module Loom::Pattern
 
   DuplicatePatternRef = Class.new Loom::LoomError
@@ -44,11 +47,11 @@ module Loom::Pattern
     end
 
     def add_pattern_refs(refs)
-      map = @slug_to_ref_map
+      @slug_to_ref_map
       refs.each do |ref|
         Loom.log.debug2(self) { "adding ref to set => #{ref.slug}" }
-        raise DuplicatePatternRef, ref.slug if map[ref.slug]
-        map[ref.slug] = ref
+        raise DuplicatePatternRef, ref.slug if @slug_to_ref_map[ref.slug]
+        @slug_to_ref_map[ref.slug] = ref
       end
     end
 
@@ -170,6 +173,7 @@ module Loom::Pattern
         mod.included_modules.include? Loom::Pattern
       end
 
+      # Recursive method to walk the tree of
       def traverse_pattern_modules(mod, pattern_parents=[], visited={}, &block)
         return if visited[mod.name] # prevent cycles
         visited[mod.name] = true

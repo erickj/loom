@@ -1,6 +1,7 @@
 require_relative "dsl"
 require_relative "hook"
 require_relative "definition_context"
+require_relative "pattern"
 require_relative "reference"
 require_relative "expanding_reference"
 require_relative "reference_set"
