@@ -1,0 +1,21 @@
+# https://rubocop.readthedocs.io/en/latest/cops_layout/
+Layout/EmptyLineAfterGuardClause:
+  Enabled: false
+Layout/EmptyLinesAroundModuleBody:
+  Enabled: false
+pLayout/EmptyLinesAroundClassBody:
+  Enabled: false
+Layout/MultilineMethodCallIndentation:
+  EnforcedStyle: indented
+
+# https://rubocop.readthedocs.io/en/latest/cops_metrics/
+Metrics/LineLength:
+  Max: 100
+
+# https://rubocop.readthedocs.io/en/latest/cops_style/
+Style/Alias:
+  Enabled: false
+Style/ClassAndModuleChildren:
+  Enabled: false
+Style/Encoding:
+  Enabled: false

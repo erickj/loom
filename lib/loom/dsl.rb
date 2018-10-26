@@ -6,11 +6,9 @@ require 'socket'
 # https://github.com/capistrano/sshkit/blob/master/lib/sshkit/backends/netssh.rb
 # https://github.com/capistrano/sshkit/blob/master/lib/sshkit/backends/local.rb
 module Loom
-
   # TODO: Rename this to something like SSHKitWrapper, DSL is a
   # terribly misinformative name.
   module DSL
-
     UnexpectedHostError = Class.new Loom::LoomError
     SSHConnectionError = Class.new Loom::LoomError
 
@@ -22,7 +20,9 @@ module Loom
     # +&block+ should accept an SSHKit::Backend and SSHKit::Host
     def on_host(host_specs, &run_block)
       host_specs.each do |spec|
-        raise UnexpectedHostError, "not a HostSpec => #{spec}" unless spec.is_a? HostSpec
+        unless spec.is_a? HostSpec
+          raise UnexpectedHostError "not a HostSpec => #{spec}"
+        end
       end
 
       host_spec_map = host_specs.reduce({}) do |map, spec|

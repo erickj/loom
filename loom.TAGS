@@ -1,0 +1,797 @@
+
+lib/loom/mods.rb,22
+module Loom::Mods1,0
+
+lib/loom/shell/cmd_wrapper.rb,657
+module Loom::Shell3,22
+  class CmdWrapper5,42
+      def escape(11,177
+      def wrap_cmd(22,480
+    def initialize(41,1100
+    attr_reader :cmd_partscmd_parts49,1411
+    def escape_cmd53,1536
+    alias_method :to_s,to_s59,1702
+    def wrap(63,1845
+    def escape_inner70,2024
+    def escape_parts(91,2774
+  class CmdRedirect106,3046
+      def append_stdout(109,3085
+    module Mode115,3223
+      INPUT 116,3239
+      OUTPUT 117,3260
+      APPEND 118,3283
+      OUTPUT_12 119,3306
+      APPEND_12 120,3340
+    def initialize(123,3383
+    def to_s129,3499
+  class CmdPipeline148,3893
+    def initialize(149,3913
+    def to_s153,3984
+
+lib/loom/shell/core.rb,876
+module Loom::Shell5,61
+  class Core7,81
+    def initialize(9,95
+    attr_reader :session,session25,544
+    attr_reader :session, :shell_api,shell_api25,544
+    attr_reader :session, :shell_api, :mod_loader,mod_loader25,544
+    attr_reader :session, :shell_api, :mod_loader, :dry_rundry_run25,544
+    def is_sudo?27,605
+    def local31,657
+    def test(35,744
+    def verify(56,1590
+    def verify_which(60,1672
+    def wrap(64,1740
+    def sudo(82,2173
+    def cd(135,4002
+    def capture(149,4369
+    def pipe(158,4616
+    def upload(163,4732
+    def execute(167,4835
+    alias_method :exec,exec188,5669
+    def prompt_label191,5717
+    def prompt_fmt(197,5811
+    def execute_internal(202,5950
+    def create_command(229,7042
+    class LocalShell 256,8216
+      def initialize(257,8244
+      def local262,8395
+      def prompt_label266,8463
+
+lib/loom/shell/harness_blob.rb,172
+module Loom::Shell4,40
+  class HarnessBlob7,115
+    def initialize(9,136
+    attr_reader :cmd_blobcmd_blob13,201
+    def encoded_script15,228
+    def checksum22,487
+
+lib/loom/shell/session.rb,186
+module Loom::Shell1,0
+  class Session2,19
+    def initialize3,35
+    attr_reader :command_resultscommand_results8,113
+    def success?10,147
+    def last14,188
+    def <<(18,238
+
+lib/loom/shell/cmd_result.rb,582
+module Loom::Shell1,0
+  class CmdResult2,19
+    def initialize(3,37
+    attr_reader :command,command13,292
+    attr_reader :command, :stdout,stdout13,292
+    attr_reader :command, :stdout, :stderr,stderr13,292
+    attr_reader :command, :stdout, :stderr, :exit_status,exit_status13,292
+    attr_reader :command, :stdout, :stderr, :exit_status, :time,time13,292
+    attr_reader :command, :stdout, :stderr, :exit_status, :time, :is_testis_test13,292
+    def success?15,367
+    def pipe(19,417
+    def self.create_from_sshkit_command(create_from_sshkit_command24,557
+
+lib/loom/shell/api.rb,361
+module Loom::Shell1,0
+  class Api6,129
+    def initialize(8,142
+    def dry_run?14,266
+    def local18,307
+    def method_missing(23,428
+  class FakeApi 34,939
+    def initialize37,982
+    attr_reader :cmd_executions,cmd_executions41,1067
+    attr_reader :cmd_executions, :cmd_execution_argscmd_execution_args41,1067
+    def method_missing(43,1121
+
+lib/loom/shell/harness_command_builder.rb,300
+module Loom1,0
+  module Shell2,12
+    HarnessMissingStdin 4,28
+    class HarnessCommandBuilder6,81
+      SCRIPT 9,156
+      DEFAULT_RUN_OPTS 11,195
+      def initialize(16,311
+      def run_cmd21,435
+      def check_cmd28,643
+      def hash_to_opts_array(35,819
+      def build_cmd(41,958
+
+lib/loom/shell/harness/session.rb,695
+module Loom6,262
+  class HostSession12,443
+    HISTORY_FILE 14,464
+    def initialize(19,634
+    attr_reader :session_namesession_name31,979
+    def bootstrap33,1010
+    def disabled?40,1209
+    def execute_pattern(46,1346
+    def handle_host_failure(76,2453
+    def script_path107,3476
+    def session_path112,3573
+    def history_file117,3682
+    def ensure_loom_remote_dirs121,3755
+    def ensure_harness_uploaded132,4160
+    def create_command_history136,4268
+    def write_to_command_history(140,4351
+    def log_to_command_history(144,4469
+    def hostname151,4758
+    def collect_facts_for_host155,4810
+    def create_shell160,4980
+    def create_mod_loader164,5070
+
+lib/loom/version.rb,32
+module Loom1,0
+  VERSION 2,12
+
+lib/loom/config.rb,457
+module Loom4,34
+  ConfigError 6,47
+  class Config8,90
+    CONFIG_VARS 12,243
+    attr_reader *CONFIG_VARS.keys, :config_mapconfig_map37,1048
+    def initialize(39,1096
+    def [](49,1357
+    def to_yaml53,1405
+    alias_method :dump,dump56,1455
+    def files60,1678
+      def configure(65,1739
+    class FileManager77,2124
+      def initialize(79,2147
+      def find(85,2337
+      def loom_files89,2419
+      def search_loom_paths(94,2541
+
+lib/loom/inventory.rb,614
+module Loom3,16
+  module Inventory4,28
+    InvalidHostEntry 6,48
+    InventoryFileEntryError 7,97
+    INVENTORY_FILE_NAMES 9,154
+    class InventoryList14,236
+        def total_inventory(17,281
+        def active_inventory(26,637
+        def inventory_files(42,1290
+      attr_reader :hostshosts47,1408
+      def initialize(49,1434
+      def disable(57,1687
+      def disabled?(61,1767
+      def hostnames65,1844
+      def group_names69,1913
+      def parse_hosts(74,1988
+    class InventoryFileSet83,2213
+      def initialize(84,2240
+      def hostgroup_map94,2500
+      def hostlist108,2862
+
+lib/loom/core_ext.rb,152
+module Loom1,0
+  module CoreExt2,12
+      def underscore4,50
+      def demodulize11,231
+    module ModuleExt16,301
+      def loom_accessor(21,529
+
+lib/loom/logger.rb,415
+module Loom3,18
+  class Logger4,30
+    COLOR_MAP 5,45
+      def configure(14,184
+      def configure_device(42,1074
+      def default_formatter(61,1561
+    module LoggerDebugLevels78,2071
+      NUM_DEBUG_LEVELS 79,2100
+      def format_severity(96,2655
+      def debug_at_level(105,2849
+    class Styleizer113,3119
+        STYLE_CODES 116,3160
+        def apply(128,3419
+        def styleize(134,3591
+
+lib/loom/trap.rb,376
+module Loom1,0
+  class Trap2,12
+    class SignalExit 4,26
+      attr_reader :signalsignal5,65
+      def initialize(7,92
+    module Sig13,208
+      HUP 14,223
+      INT 15,241
+      QUIT 16,259
+      TERM 17,279
+      USR1 18,299
+      USR2 19,319
+    def self.install(install22,348
+    class Handler29,543
+      def initialize(31,562
+      def handle(36,666
+
+lib/loom/dsl.rb,159
+module Loom8,298
+  module DSL11,408
+    UnexpectedHostError 12,421
+    SSHConnectionError 13,473
+    def on_host(21,776
+    class SSHKitDSLShadow63,2173
+
+lib/loom/runner.rb,318
+module Loom1,0
+  class Runner2,12
+    PatternExecutionError 4,28
+    FailFastExecutionError 5,82
+    def initialize(9,167
+    def run(30,680
+    def install_signal_traps91,2814
+    def load111,3454
+    def run_internal(128,4042
+    def execute_pattern(187,6496
+    def handle_host_failure_strategy(222,7911
+
+lib/loom/facts/fact_set.rb,581
+module Loom::Facts1,0
+    def is_empty?(4,36
+  EMPTY 9,107
+    def [](11,137
+  class FactSet20,406
+    InvalidFactName 22,423
+    InvalidFactValue 23,471
+    UnmarshalableError 24,520
+      def create_for_host(27,590
+    def initialize(68,1997
+    attr_reader :host_spechost_spec79,2288
+    def merge(81,2316
+    def hostname94,2668
+    def sshname105,2983
+    def get(109,3033
+    alias_method :[],[]118,3207
+    def facts120,3235
+    def to_s124,3278
+    def validate_facts(129,3374
+    def validate_fact_name(137,3602
+    def validate_fact_value(141,3719
+
+lib/loom/facts/fact_file_provider.rb,472
+module Loom::Facts3,16
+  class FactFileProvider 5,36
+    InvalidFactFileConversion 7,73
+    YAML_FILE_GLOBS 9,132
+    TXT_FILE_GLOBS 15,230
+    ALL_FILE_GLOBS 20,302
+    def initialize(35,690
+    def collect_facts39,768
+    def convert_path_to_map44,833
+    def convert_file_paths(49,912
+    def load_config(58,1218
+  class YAMLFactFileProvider 63,1310
+    def convert_path_to_map(65,1359
+  class TxtFileProvider 71,1435
+    def convert_path_to_map(73,1479
+
+lib/loom/facts/provider.rb,344
+module Loom::Facts1,0
+  class Provider3,20
+    attr_reader :fact_map,fact_map5,103
+    attr_reader :fact_map, :namespacenamespace5,103
+      def disable_for_host(12,405
+      def disabled_for_host?(19,693
+      def register_factory(25,904
+      def create_fact_providers(31,1102
+    def disable(38,1299
+    def collect_facts43,1451
+
+lib/loom/mods/action_proxy.rb,562
+module Loom::Mods3,122
+  class ActionProxy4,140
+    def initialize(6,161
+    def proxy_for_namespace(12,285
+      def new_action_map19,411
+      def subclass_for_action_map(23,469
+      def install_action_map(29,634
+      def install_root_actions(34,778
+      def install_namespace_action_proxies(61,1874
+    class ActionMap80,2529
+      attr_reader :action_tuples,action_tuples82,2550
+      attr_reader :action_tuples, :ns_actionmapsns_actionmaps82,2550
+      def initialize84,2600
+      def add_action(89,2688
+      def add_namespace(100,3065
+
+lib/loom/mods/module.rb,994
+module Loom::Mods1,0
+  ModActionError 3,19
+  InvalidModActionSignature 4,64
+  class Module6,121
+    attr_accessor :shell,shell7,136
+    attr_accessor :shell,shell=7,136
+    attr_accessor :shell, :loom_config,loom_config7,136
+    attr_accessor :shell, :loom_config,loom_config=7,136
+    attr_accessor :shell, :loom_config, :loom,loom7,136
+    attr_accessor :shell, :loom_config, :loom,loom=7,136
+    attr_accessor :shell, :loom_config, :loom, :mods,mods7,136
+    attr_accessor :shell, :loom_config, :loom, :mods,mods=7,136
+    attr_accessor :shell, :loom_config, :loom, :mods, :action_proxyaction_proxy7,136
+    attr_accessor :shell, :loom_config, :loom, :mods, :action_proxyaction_proxy=7,136
+    def initialize(9,205
+    def init_action(30,1030
+    def execute(35,1144
+      def register_mod(57,1993
+      def required_commands(79,3131
+      def import_actions(85,3295
+      def bind_action(94,3632
+      def action_proxy(115,4576
+      def action_map123,4849
+
+lib/loom/mods/mod_loader.rb,356
+module Loom::Mods1,0
+  AliasRegisteredError 3,19
+  AnonymousModLoadError 4,70
+  ModDefinedError 5,122
+  ModNotRegisteredError 6,169
+  class ModLoader8,222
+    def initialize(9,240
+    def verify_shell_cmds(13,314
+      def register_mod(27,729
+      def define_mod_factory(48,1496
+      def registered_mods63,2016
+      def alias_module(68,2099
+
+lib/loom/pattern/reference.rb,378
+module Loom::Pattern1,0
+  class Reference2,21
+    attr_reader :slug,slug4,40
+    attr_reader :slug, :source_file,source_file4,40
+    attr_reader :slug, :source_file, :descdesc4,40
+    def initialize(6,84
+    def is_expanding?14,332
+    def call(18,375
+    class RunContext44,1281
+      def initialize(45,1302
+      def run(50,1456
+      def apply_pattern(73,2275
+
+lib/loom/pattern/dsl.rb,950
+module Outer72,4087
+  module Inner77,4168
+module ordering,115,5248
+def top_level;126,5543
+module Submod128,5563
+module Loom::Pattern249,9604
+  PatternDefinitionError 251,9626
+  module DSL259,9856
+    def pattern_mod_init261,9870
+    def description(275,10094
+    alias_method :desc,desc278,10173
+    def with_facts(280,10211
+    def let(286,10404
+    def pattern(291,10589
+    def report(297,10750
+    def weave(327,12076
+    def before(334,12301
+    def after(338,12360
+    def weave_slugs342,12417
+    def is_weave?(351,12635
+    def pattern_methods355,12716
+    def pattern_description(359,12787
+    def pattern_method(363,12867
+    def hooks368,13004
+    def facts372,13040
+    def let_map376,13079
+    def define_pattern_internal(385,13436
+    def hook(421,14715
+  class LetMapEntry426,14804
+    attr_reader :default,default427,14824
+    attr_reader :default, :blockblock427,14824
+    def initialize(428,14857
+
+lib/loom/pattern/reference_set.rb,881
+module Loom::Pattern9,440
+  DuplicatePatternRef 11,462
+  UnknownPatternMethod 12,512
+  InvalidPatternNamespace 13,563
+  class ReferenceSet17,670
+      def load_from_file(20,710
+    def initialize26,879
+    def slugs30,935
+    def pattern_refs34,986
+    def get_pattern_ref(38,1046
+    alias_method :[],[]43,1179
+    def merge!(45,1219
+    def add_pattern_refs(49,1302
+    class Builder58,1584
+        def create(62,1691
+      def initialize(74,2123
+      def build80,2301
+      def pattern_refs87,2439
+      def refs_for_mod_spec(91,2554
+      def build_expanding_reference(108,3135
+      def build_pattern_reference(115,3413
+      def context_for_mod_spec(123,3732
+      def compute_slug(135,4113
+      def mod_namespace_list(139,4246
+      def pattern_mod_specs155,4838
+      def is_pattern_module(172,5446
+      def traverse_pattern_modules(177,5587
+
+lib/loom/pattern/result_reporter.rb,302
+module Loom::Pattern1,0
+  class ResultReporter2,21
+    def initialize(3,44
+    attr_reader :hostnamehostname12,301
+    def failure_summary14,328
+    def write_report19,432
+    def success?31,650
+    def scenario_string35,706
+    def generate_report40,842
+    def generate_cmd_report(63,1747
+
+lib/loom/pattern/loader.rb,354
+module Loom::Pattern1,0
+  SiteFileNotFound 3,22
+  RecursiveExpansionError 4,69
+  class Loader6,124
+      def load(8,157
+    def initialize(15,295
+    def slugs20,420
+    def patterns(24,470
+    def get_pattern_ref(33,668
+    alias_method :[],[]36,733
+    def load_patterns38,773
+    def load_pattern_file(46,948
+    def expand_refs(50,1045
+
+lib/loom/pattern/expanding_reference.rb,350
+module Loom::Pattern1,0
+  class ExpandingReference2,21
+    attr_reader :slug,slug4,49
+    attr_reader :slug, :reference_slugs,reference_slugs4,49
+    attr_reader :slug, :reference_slugs, :source_file,source_file4,49
+    attr_reader :slug, :reference_slugs, :source_file, :descdesc4,49
+    def initialize(6,111
+    def is_expanding?12,274
+
+lib/loom/pattern/definition_context.rb,505
+module Loom::Pattern1,0
+  class DefinitionContext7,210
+    NilLetValueError 9,237
+    def initialize(11,287
+    attr_reader :let_map,let_map22,599
+    attr_reader :let_map, :fact_map,fact_map22,599
+    attr_reader :let_map, :fact_map, :hookshooks22,599
+    def fact_set(27,734
+    def define_let_readers(40,1377
+    def before_hooks55,2016
+    def after_hooks59,2083
+    def merged_fact_map66,2268
+    def merged_let_map72,2421
+    def merged_hooks82,2762
+    def merged_contexts87,2878
+
+lib/loom/pattern/pattern.rb,260
+module Loom::Pattern1,0
+  class Pattern3,89
+    KINDS 5,106
+    KIND_KWARGS 10,298
+    attr_reader :name,name14,362
+    attr_reader :name, :description,description14,362
+    attr_reader :name, :description, :kindkind14,362
+    def initialize(16,406
+
+lib/loom/pattern/hook.rb,240
+module Loom::Pattern1,0
+  class Hook2,21
+      def around_hooks(5,53
+      def before_hooks(9,144
+      def after_hooks(13,235
+    def initialize(18,332
+    attr_reader :scope,scope26,530
+    attr_reader :scope, :blockblock26,530
+
+lib/loom/method_signature.rb,1299
+module Loom1,0
+  class MethodSignature4,60
+    module ParamType6,85
+      REQ 7,106
+      OPT 8,123
+      REST 9,140
+      KEYREQ 10,159
+      KEY 11,182
+      KEYREST 12,199
+      BLOCK 13,224
+    def initialize(17,317
+    attr_reader :req_args,req_args28,753
+    attr_reader :req_args, :opt_args,opt_args28,753
+    attr_reader :req_args, :opt_args, :rest_args,rest_args28,753
+    attr_reader :req_args, :opt_args, :rest_args, :keyreq_args,keyreq_args28,753
+    attr_reader :req_args, :opt_args, :rest_args, :keyreq_args, :key_args,key_args28,753
+                :keyrest_args,keyrest_args29,828
+                :keyrest_args, :block_argsblock_args29,828
+    def find_by_type(31,872
+    def method_missing(36,1029
+    class MatchSpec46,1285
+      class Builder48,1306
+        def initialize49,1326
+        def method_missing(61,1617
+        def build66,1728
+        def builder72,1825
+      def initialize(90,2706
+      def match?(108,3208
+      def check_ordered_args(120,3516
+      def check_rest(132,3867
+      def check_req_args(136,3986
+      def check_opt_args(140,4098
+      def check_keyword_args(144,4210
+      def check_keyrest(152,4439
+      def check_keyreq_args(156,4570
+      def check_key_args(162,4746
+      def check_block_args(168,4910
+
+lib/loom/pattern.rb,48
+module Loom::Pattern1,0
+    def included(6,80
+
+lib/loom/shell.rb,91
+module Loom1,0
+  module Shell2,12
+    VerifyError 4,28
+    def self.create(create6,73
+
+lib/loom/host_spec.rb,316
+module Loom4,40
+  UnparseableHostStringError 6,53
+  class HostSpec8,111
+    attr_accessor :disableddisabled11,152
+    attr_accessor :disableddisabled=11,152
+    attr_reader :sshkit_hostsshkit_host12,180
+    def initialize(16,320
+    def is_remote?21,458
+    def is_localhost?25,507
+    def parse(30,606
+
+lib/loom/facts.rb,62
+module Loom3,30
+  module Facts4,42
+      def fact_set(7,76
+
+lib/loom.rb,211
+module Loom3,27
+  LoomError 5,40
+  ExecutionError 6,80
+    def configure(9,136
+    def config14,247
+    def reset_config22,380
+    def log26,430
+    def config_changed31,495
+    def config_logger37,680
+
+lib/loomext/all.rb,13
+LoomExt 1,0
+
+lib/loomext/corefacts.rb,43
+module LoomExt1,0
+  module CoreFacts2,15
+
+lib/loomext/corefacts/all.rb,43
+module LoomExt1,0
+  module CoreFacts2,15
+
+lib/loomext/corefacts/facter_provider.rb,114
+module LoomExt::CoreFacts1,0
+  class FacterProvider 2,26
+    def initialize(8,209
+    def collect_facts15,395
+
+lib/loomext/corefacts/system_info_provider.rb,315
+module LoomExt::CoreFacts1,0
+  class SystemInfoProvider 2,26
+    def initialize(10,285
+    def collect_facts15,384
+    def facts_from_vmstat31,901
+    def facts_from_proc_loadavg42,1357
+    def facts_from_df59,1951
+    def facts_from_etc_os_release80,2587
+    def facts_from_sys_class_thermal_zones94,2953
+
+lib/loomext/coremods/files.rb,434
+module LoomExt::CoreMods1,0
+  class Files 2,25
+    def init_action(9,269
+    def each_path(18,519
+    module Actions37,1043
+      def cat39,1063
+      def rm45,1157
+      def mv(51,1255
+      def match?(57,1367
+      def gsub(66,1554
+      def chown(76,1832
+      def touch84,2044
+      def mkdir(88,2107
+      def ensure_line(94,2358
+      def sudo_append(118,3077
+      def append(130,3411
+      def write(159,4505
+
+lib/loomext/coremods/systemd/systemd.rb,366
+module LoomExt::CoreMods1,0
+  module SystemdCommon3,26
+    def do_systemctl(4,49
+  class Systemd 20,385
+    module Actions25,476
+      def is_loaded?(27,496
+      def is_active?(31,586
+      def status(35,663
+      def enable(39,733
+      def start(43,803
+      def disable(47,871
+      def restart(51,943
+      def stop(55,1015
+      def link(59,1081
+
+lib/loomext/coremods/systemd/systemd_units.rb,415
+module LoomExt::CoreMods1,0
+  module SystemdUnitsCommon3,26
+    def init_action(5,55
+    def do_systemctl_list(10,143
+    def common_list_flags14,270
+  class SystemdUnits 19,348
+    module Actions25,481
+      def list26,500
+      def status30,559
+  class SystemdSockets 40,740
+    module Actions46,871
+      def list47,890
+  class SystemdTimers 55,993
+    module Actions61,1122
+      def list62,1141
+
+lib/loomext/coremods/exec.rb,289
+module LoomExt::CoreMods2,41
+  FailError 4,67
+  class Exec 10,203
+  class ExecEcho 18,435
+  class ChangeDirectory 24,592
+  class Timeout 32,862
+  class Time 38,1033
+  class Sudo 44,1173
+  class SudoCheck 51,1380
+  class Test 57,1485
+  class Fail 63,1589
+  class Upload 69,1709
+
+lib/loomext/coremods/all.rb,42
+module LoomExt1,0
+  module CoreMods2,15
+
+lib/loomext/coremods/package/adapter.rb,804
+module LoomExt::CoreMods1,0
+  class Package 2,25
+    class PkgAdapter4,63
+      attr_reader :loomloom6,85
+      def initialize(8,110
+      def ensure_installed(12,169
+      def installed?(16,271
+      def install(20,344
+      def uninstall(24,415
+      def update_cache28,488
+      def upgrade(32,554
+    class GemAdapter 37,633
+      def installed?(38,667
+      def install(42,756
+    class DpkgAdapter 47,843
+      def installed?(49,879
+    class AptAdapter 54,969
+      def install(56,1005
+      def uninstall(61,1170
+      def update_cache65,1248
+      def upgrade(70,1371
+    class RpmAdapter 77,1561
+      def installed?(79,1596
+    class DnfAdapter 85,1688
+      def install(87,1723
+      def uninstall(91,1826
+      def update_cache96,1975
+      def upgrade(100,2064
+
+lib/loomext/coremods/package/package.rb,295
+module LoomExt::CoreMods4,50
+  class Package 5,75
+    UnsupportedPackageManager 7,113
+    attr_reader :pkg_adapterpkg_adapter9,183
+    def init_action13,236
+    def get(17,302
+    alias_method :[],[]33,649
+    def default_adapter35,677
+    module Actions49,1026
+      def [](54,1191
+
+lib/loomext/coremods/vm/all.rb,46
+module LoomExt::CoreMods1,0
+  module VM2,25
+
+lib/loomext/coremods/vm/vbox.rb,341
+module LoomExt::CoreMods::VM1,0
+  class Virtualbox 2,29
+    DuplicateVMImport 4,70
+    UnknownVM 5,125
+    module Actions10,231
+      def check_exists(11,250
+      def check_running(15,342
+      def list21,492
+      def snapshot(25,562
+      def import(35,839
+      def clone(47,1213
+      def up(65,1836
+      def down(73,2055
+
+lib/loomext/coremods/net.rb,205
+module LoomExt::CoreMods1,0
+  class Net 2,25
+    NoNetworkError 4,59
+    def init_action(8,135
+    module Actions13,260
+      def has_net?15,280
+      def check_net21,451
+      def with_net(25,551
+
+lib/loomext/coremods/user.rb,423
+module LoomExt::CoreMods1,0
+  class User 2,25
+    SudoersDNoExistError 4,60
+    SudoersDNotIncluded 5,124
+    SUDOERS_FILE 10,262
+    SUDOERS_DIR 11,296
+    LOOM_SUDOERS_FILE 12,331
+    def user_exists?(14,389
+    def includes_sudoers?18,465
+    def sudoersd_exists?22,579
+    module Actions26,659
+      def add(27,678
+      def add_system_user(51,1416
+      def remove(60,1690
+      def make_sudoer(69,1902
+
+lib/loomext/coremods/git.rb,115
+module LoomExt::CoreMods1,0
+  class Git 2,25
+    module Actions7,109
+      def push8,128
+      def pull12,188
+
+lib/loomext/coremods.rb,42
+module LoomExt1,0
+  module CoreMods2,15
+
+lib/loomext/coremods/vm.rb,0
+
+lib/loomext/coremods/systemd.rb,0
+
+lib/loomext/coremods/systemd/all.rb,0
+
+lib/env/development.rb,0
+
+lib/loom/pattern/all.rb,0
+
+lib/loom/mods/all.rb,0
+
+lib/loom/facts/all.rb,0
+
+lib/loom/all.rb,0
+
+lib/loom/shell/all.rb,0

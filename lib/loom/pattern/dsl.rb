@@ -264,7 +264,6 @@ module Loom::Pattern
       @pattern_map = {}
       @fact_map = {}
       @let_map = {}
-      @weave_slugs = {}
       @hooks = []
       @next_description = nil
 
@@ -326,12 +325,9 @@ module Loom::Pattern
     end
 
     def weave(name, pattern_slugs)
-      @weave_slugs[name.to_sym] = pattern_slugs.map { |s| s.to_s }
-
       unless @next_description
         @next_description = "Weave runs patterns: %s" % pattern_slugs.join(", ")
       end
-
       define_pattern_internal(name, kind: :weave) { true }
     end
 
@@ -344,7 +340,12 @@ module Loom::Pattern
     end
 
     def weave_slugs
-      @weave_slugs
+      @pattern_map.to_a.reduce({}) do |memo, pair|
+        name, pattern = pair
+        next memo unless pattern.is_weave?
+
+        memo.merge name => pattern.weave.pattern_slugs
+      end
     end
 
     def is_weave?(name)
@@ -352,7 +353,7 @@ module Loom::Pattern
     end
 
     def pattern_methods
-      @pattern_map.values.map &:name
+      @pattern_map.values.map(&:name)
     end
 
     def pattern_description(name)
@@ -400,8 +401,7 @@ module Loom::Pattern
       @pattern_map[name] =
         Pattern.new name: name, description: desc, kind: kind, &loom_file_block
 
-
-      # TODO defining the method on the pattern ::Module is unnecessary, I just
+      # TODO: defining the method on the pattern ::Module is unnecessary, I just
       # unbind it later on and rebind it to the
       # Loom::Pattern::Reference::RunContext, so all I really need to do is
       # cache the original block.
@@ -414,7 +414,7 @@ module Loom::Pattern
       # Patterns declared in the .loom file are defined here:
       define_method name do |loom, facts|
         Loom.log.debug(self) { "calling .loom file #{kind}: #{name}" }
-        self.instance_exec(loom, facts, &loom_file_block)
+        instance_exec(loom, facts, &loom_file_block)
       end
     end
 
