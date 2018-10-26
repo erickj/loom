@@ -54,6 +54,7 @@ describe "spec .loom files" do
   # bundle exec rspec --tag integration
   LOOM_FILES.each do |loom_file|
     context File.basename loom_file do
+      let(:loom_file) { loom_file }
       let(:ref_set) { create_reference_set(path: loom_file) }
 
       if XFILE_SET[File.basename(loom_file)]
@@ -63,6 +64,7 @@ describe "spec .loom files" do
         it "should pass all tests",
         SPEC_TAGS.merge(:file => File.basename(loom_file)) do
           exec = command.join(' ')
+          puts exec
           # TODO pattern match the commands on STDOUT (see comment in
           # .loom/test.loom)
           output = `#{exec}`
