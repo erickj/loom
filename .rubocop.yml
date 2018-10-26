@@ -3,10 +3,15 @@ Layout/EmptyLineAfterGuardClause:
   Enabled: false
 Layout/EmptyLinesAroundModuleBody:
   Enabled: false
-pLayout/EmptyLinesAroundClassBody:
+Layout/EmptyLinesAroundClassBody:
+  Enabled: false
+Layout/MultilineMethodCallBrace:
   Enabled: false
 Layout/MultilineMethodCallIndentation:
   EnforcedStyle: indented
+
+Lint/BooleanSymbol:
+  Enabled: false
 
 # https://rubocop.readthedocs.io/en/latest/cops_metrics/
 Metrics/LineLength:
@@ -21,4 +26,6 @@ Style/Alias:
 Style/ClassAndModuleChildren:
   Enabled: false
 Style/Encoding:
+  Enabled: false
+Sylte/IfUnlessModifier:
   Enabled: false

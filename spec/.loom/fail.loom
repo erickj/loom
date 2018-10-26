@@ -12,6 +12,7 @@ module ExpectedFailures
 EOS
   end
 
+
   desc "Always fails due to return code."
   pattern :fail_soft do |loom, facts|
     unless loom.x :false
@@ -19,9 +20,9 @@ EOS
     end
   end
 
-  desc "Always fails due to a hard failure"
+  desc "Expect `loom.fail` to throw and error out"
   pattern :fail_hard do |loom, facts|
-    loom.fail "Fail big or not at all"
+    loom.fail "`loom.fail`: Fail big or not at all"
   end
 
   desc "Expected to fail: Check timeout commands"

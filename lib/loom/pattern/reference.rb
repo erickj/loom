@@ -1,22 +1,25 @@
 module Loom::Pattern
+  # See Loom::Pattern::Pattern for the difference between refs and patterns.
   class Reference
 
-    attr_reader :slug, :source_file, :desc
+    attr_reader :slug, :source_file, :desc, :pattern
 
-    def initialize(slug, unbound_method, source_file, definition_ctx, description)
+    def initialize(slug, pattern, source_file, definition_ctx)
       @slug = slug
-      @unbound_method = unbound_method
       @source_file = source_file
       @definition_ctx = definition_ctx
-      @desc = description
+      @desc = pattern.description
+      @pattern = pattern
     end
 
-    def is_expanding?
-      false
+    # Used by Loom::Pattern::Loader to expand weaves. A Pattern::Reference it
+    # just expands to itself.
+    def expand_slugs
+      @slug
     end
 
     def call(shell_api, host_fact_set)
-      run_context = RunContext.new @unbound_method, @definition_ctx
+      run_context = RunContext.new @pattern, @definition_ctx
 
       fact_set = @definition_ctx.fact_set host_fact_set
       Loom.log.debug5(self) {
@@ -30,7 +33,7 @@ module Loom::Pattern
       begin
         run_context.run shell_api, fact_set
       rescue => e
-        error_msg = "error executing '#{slug}' in #{source_file} => #{e} \n%s"
+        error_msg = "error executing '#{slug}' in #{source_file} =>\n\t#{e}\n%s"
         Loom.log.error(error_msg % e.backtrace.join("\n\t"))
         raise
       end
@@ -42,8 +45,8 @@ module Loom::Pattern
     # A small class to bind the unbound_method to and provide context
     # in the case of errors.
     class RunContext
-      def initialize(unbound_method, definition_ctx)
-        @bound_method = unbound_method.bind self
+      def initialize(pattern, definition_ctx)
+        @pattern = pattern
         @definition_ctx = definition_ctx
       end
 
@@ -55,7 +58,7 @@ module Loom::Pattern
           Loom.log.debug1(self) { "before hooks => #{before_hooks}"}
           before_hooks.each do |hook|
             Loom.log.debug2(self) { "executing before hook => #{hook}"}
-            self.instance_exec shell_api, fact_set, &hook.block
+            instance_exec shell_api, fact_set, &hook.block
           end
 
           # This is the entry point into calling patterns.
@@ -64,14 +67,15 @@ module Loom::Pattern
           Loom.log.debug1(self) { "after hooks => #{after_hooks}" }
           after_hooks.each do |hook|
             Loom.log.debug2(self) { "executing after hook => #{hook}"}
-            self.instance_exec shell_api, fact_set, &hook.block
+            instance_exec shell_api, fact_set, &hook.block
           end
         end
       end
 
       private
+
       def apply_pattern(*args)
-        @bound_method.call *args
+        instance_exec(*args, &@pattern.pattern_block)
       end
     end
 

@@ -1,12 +1,24 @@
 # TODO: add in test verifications that these tests are actually doing what
 # they're supposed to do.
 # $ bx rspec spec/test_loom_spec.rb -f d -t file:test.loom
-module Smoke
+weave :smoke, [
+  :"test:*",
+]
+
+module Test
   include Loom::Pattern
 
-  desc "Prints some known facts"
-  report :three_facts do |loom, facts|
-    facts
+  with_facts { |f| f.merge a_fact: :or_fiction?  }
+  let(:a_fact_len) { |f| f[:a_fact].size }
+
+  desc "inspects the facts"
+  report :the_facts do |loom, facts|
+    loom.fail "this should not happen: #{a_fact_len}" unless a_fact_len == 11
+  end
+
+  desc "expects cli provided :param_facts"
+  pattern :param_facts do |loom, facts|
+    loom.fail "expected :param_facts" unless facts[:param_facts] == "from args"
   end
 
   desc "Reports `uptime` status"
@@ -28,6 +40,7 @@ module Smoke
   pattern :wrap_returns do |loom, facts|
     # using loom.time as a proxy for Shell::Core#wrap here
     loom.time do
+      # TODO: this should be loom.fail
       raise "wrapped true is not true" unless loom.test :true
       raise "wrapped false is not false" if loom.test :false
     end

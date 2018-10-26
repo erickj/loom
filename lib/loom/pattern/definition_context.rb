@@ -8,11 +8,11 @@ module Loom::Pattern
 
     NilLetValueError = Class.new Loom::LoomError
 
-    def initialize(pattern_module, parent_context=nil)
-      @fact_map = pattern_module.facts.dup
-      @let_map = pattern_module.let_map.dup
+    def initialize(dsl_builder, parent_context=nil)
+      @fact_map = dsl_builder.facts.dup
+      @let_map = dsl_builder.let_map.dup
 
-      @hooks = pattern_module.hooks.dup
+      @hooks = dsl_builder.hooks.dup
       @parent_context = parent_context
 
       @merged_fact_map = merged_fact_map

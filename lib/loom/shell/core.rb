@@ -168,22 +168,22 @@ module Loom::Shell
       cmd_parts.compact!
       raise "empty command passed to execute" if cmd_parts.empty?
 
-      result = if @dry_run
-                 wrap :printf, :first => true do
-                   cmd_result = execute_internal *cmd_parts, **cmd_opts
-                   Loom.log.info do
-                     "\t%s" % prompt_fmt(cmd_result.full_stdout.strip)
-                   end
-                   cmd_result
-                 end
-               else
-                 execute_internal *cmd_parts, **cmd_opts
-               end
-      @session << CmdResult.create_from_sshkit_command(result, is_test, self)
+      sshkit_result = if @dry_run
+                        wrap(:printf, first: true) do
+                          r = execute_internal(*cmd_parts, **cmd_opts)
+                          Loom.log.info { "\t%s" % prompt_fmt(cmd_result.full_stdout.strip) }
+                          r
+                        end
+                      else
+                        execute_internal(*cmd_parts, **cmd_opts)
+                      end
+      result =
+        CmdResult.create_from_sshkit_command(sshkit_result, is_test, self)
 
-      Loom.log.debug @session.last.stdout unless @session.last.stdout.empty?
-      Loom.log.debug @session.last.stderr unless @session.last.stderr.empty?
-      @session.last
+      @session << result
+      Loom.log.debug result.stdout unless result.stdout.empty?
+      Loom.log.debug result.stderr unless result.stderr.empty?
+      result
     end
     alias_method :exec, :execute
 

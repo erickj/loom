@@ -10,7 +10,12 @@ module Loom::Mods
       @loom_config = loom_config
     end
 
-    def verify_shell_cmds(shell, mod_klass)
+    def load_mod_klass(mod_klass, shell)
+      verify_shell_cmds mod_klass, shell
+    end
+
+    private
+    def verify_shell_cmds(mod_klass, shell)
       Loom.log.debug2(self) { "verifying cmds for mod => #{mod_klass}" }
       mod_klass.required_commands.each do |cmd|
         begin
@@ -53,7 +58,7 @@ module Loom::Mods
           Loom.log.debug3(self) do
             "handling mod call => #{mod_klass}##{name} #{args} #{pattern_block}"
           end
-          verify_shell_cmds shell, mod_klass
+          load_mod_klass mod_klass, shell
 
           mod = mod_klass.new shell, @loom_config
           mod.execute *args, &pattern_block

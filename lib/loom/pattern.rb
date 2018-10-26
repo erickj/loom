@@ -6,7 +6,6 @@ module Loom::Pattern
     def included(pattern_mod)
       Loom.log.debug2(self) { "pattern module loaded => #{pattern_mod}" }
       pattern_mod.extend DSL
-      pattern_mod.pattern_mod_init
     end
   end
 

@@ -4,8 +4,8 @@
 # stacktraces to get the correct .loom file line (but I forget if that's done
 # here or in pattern/reference.rb maybe?)
 
-# TODO: Eliminate the use of the word "mod" from this file, (I believe) every
-# use of the word "mod" refers to ::Module, NOT Loom::Mod::Module.
+# NB: The use of the word "mod" or "module" in this file probably means a
+# ::Module, not a Loom::Mods::Module
 module Loom::Pattern
 
   DuplicatePatternRef = Class.new Loom::LoomError
@@ -19,7 +19,11 @@ module Loom::Pattern
     class << self
       def load_from_file(path)
         Loom.log.debug1(self) { "loading patterns from file => #{path}" }
-        Builder.create File.read(path), path
+        builder(File.read(path), path).build
+      end
+
+      def builder(file_src, file_path)
+        Builder.create(file_src, file_path)
       end
     end
 
@@ -43,11 +47,10 @@ module Loom::Pattern
     alias_method :[], :get_pattern_ref
 
     def merge!(ref_set)
-      self.add_pattern_refs(ref_set.pattern_refs)
+      add_pattern_refs(ref_set.pattern_refs)
     end
 
     def add_pattern_refs(refs)
-      @slug_to_ref_map
       refs.each do |ref|
         Loom.log.debug2(self) { "adding ref to set => #{ref.slug}" }
         raise DuplicatePatternRef, ref.slug if @slug_to_ref_map[ref.slug]
@@ -60,6 +63,9 @@ module Loom::Pattern
 
       class << self
         def create(ruby_code, source_file)
+          # Creates an anonymous parent module in which to evaluate the .loom
+          # file src. This module acts as a global context for the .loom file.
+          # TODO: How should this be hardened?
           shell_module = Module.new
           shell_module.include Loom::Pattern
           # TODO: I think this is my black magic for capturing stacktrace
@@ -67,76 +73,83 @@ module Loom::Pattern
           shell_module.module_eval ruby_code, source_file, 1
           shell_module.namespace ""
 
-          self.new(shell_module, source_file).build
+          self.new shell_module, source_file
         end
       end
 
       def initialize(shell_module, source_file)
         @shell_module = shell_module
-        @pattern_mod_specs = pattern_mod_specs
         @source_file = source_file
       end
 
       def build
         ref_set = ReferenceSet.new
+
+        dsl_specs = create_dsl_specs
+        pattern_refs = create_pattern_refs dsl_specs, ref_set
+
         ref_set.add_pattern_refs pattern_refs
         ref_set
       end
 
       private
-      def pattern_refs
-        @pattern_mod_specs.map { |mod_spec| refs_for_mod_spec mod_spec }.flatten
+      # TODO: I don't like passing in the ref set build target here.... but
+      # ExpandingReference needs it... Can I do this w/o an instance variable
+      # and w/o plumbing the param through methods?
+      def create_pattern_refs(dsl_specs, builder_target_ref_set)
+        dsl_specs.flat_map do |dsl_spec|
+          create_refs_for_dsl_spec dsl_spec, builder_target_ref_set
+        end
       end
 
-      def refs_for_mod_spec(mod_spec)
-        mod = mod_spec[:module]
-        context = context_for_mod_spec mod_spec
+      def create_refs_for_dsl_spec(dsl_spec, builder_target_ref_set)
+        context = create_defn_context_for_dsl_spec dsl_spec
 
-        mod_spec[:pattern_methods].map do |m|
-          slug = compute_slug mod_spec[:namespace_list], m
+        dsl_spec[:dsl_builder].patterns.map do |pattern|
+          slug = compute_slug dsl_spec[:namespace_list], pattern.name
 
-          if mod.is_weave?(m)
+          case pattern.kind
+          when :weave
             Loom.log.debug2(self) { "adding ExpandingReference for weave: #{slug}" }
-            build_expanding_reference(m, slug, mod)
+            create_expanding_reference(pattern, slug, builder_target_ref_set)
           else
             Loom.log.debug2(self) { "adding Reference for pattern: #{slug}" }
-            build_pattern_reference(m, slug, context, mod)
+            create_pattern_reference(pattern, slug, context)
           end
         end
       end
 
-      def build_expanding_reference(weave_name, slug, mod)
-        desc = mod.pattern_description weave_name
+      def create_expanding_reference(pattern, slug, ref_set)
+        desc = pattern.description
         Loom.log.warn "no descripiton for weave => #{slug}" unless desc
 
-        ExpandingReference.new slug, mod.weave_slugs[weave_name], @source_file, desc
+        ExpandingReference.new slug, pattern, ref_set
       end
 
-      def build_pattern_reference(pattern_name, slug, context, mod)
-        method = mod.pattern_method pattern_name
-        desc = mod.pattern_description pattern_name
+      def create_pattern_reference(pattern, slug, context)
+        desc = pattern.description
         Loom.log.warn "no descripiton for pattern => #{slug}" unless desc
 
-        Reference.new slug, method, @source_file, context, desc
+        Reference.new slug, pattern, @source_file, context
       end
 
-      def context_for_mod_spec(mod_spec)
-        parents = mod_spec[:parent_modules].find_all do |mod|
-          is_pattern_module mod
+      # Creates a DefinitionContext for dsl_module by flattening and mapping
+      # parent ::Modules to a contextualized DefinitionContext.
+      def create_defn_context_for_dsl_spec(dsl_spec)
+        parents = dsl_spec[:parent_modules].find_all do |mod|
+          dsl_module? mod
         end
         parent_context = parents.reduce(nil) do |parent_ctx, parent_mod|
-          DefinitionContext.new parent_mod, parent_ctx
+          DefinitionContext.new parent_mod.dsl_builder, parent_ctx
         end
-
-        mod = mod_spec[:module]
-        DefinitionContext.new mod, parent_context
+        DefinitionContext.new dsl_spec[:dsl_builder], parent_context
       end
 
       def compute_slug(namespace_list, pattern_method_name)
         namespace_list.dup.push(pattern_method_name).join ":"
       end
 
-      def mod_namespace_list(pattern, parent_modules)
+      def create_namespace_list(pattern, parent_modules)
         mods = parent_modules.dup << pattern
         mods.reduce([]) do |memo, mod|
           mod_name = if mod.respond_to?(:namespace) && mod.namespace
@@ -152,33 +165,35 @@ module Loom::Pattern
         end
       end
 
-      def pattern_mod_specs
-        pattern_mods = []
-        traverse_pattern_modules @shell_module do |pattern_mod, parent_modules|
-          Loom.log.debug2(self) { "found pattern module => #{pattern_mod}" }
-          pattern_methods = pattern_mod.pattern_methods
+      def create_dsl_specs
+        dsl_mods = []
+        traverse_dsl_modules @shell_module do |dsl_mod, parent_modules|
+          Loom.log.debug2(self) { "found pattern module => #{dsl_mod}" }
 
-          next if pattern_methods.empty?
-          pattern_mods << {
-            :namespace_list => mod_namespace_list(pattern_mod, parent_modules),
-            :pattern_methods => pattern_methods,
-            :module => pattern_mod,
-            :parent_modules => parent_modules.dup
+          dsl_builder = dsl_mod.dsl_builder
+          next if dsl_builder.patterns.empty?
+
+          dsl_mods << {
+            namespace_list: create_namespace_list(dsl_mod, parent_modules),
+            dsl_builder: dsl_builder,
+            dsl_module: dsl_mod,
+            parent_modules: parent_modules
           }
         end
-        pattern_mods
+        dsl_mods
       end
 
-      def is_pattern_module(mod)
+      def dsl_module?(mod)
         mod.included_modules.include? Loom::Pattern
       end
 
-      # Recursive method to walk the tree of
-      def traverse_pattern_modules(mod, pattern_parents=[], visited={}, &block)
+      # Recursive method to walk the tree of dsl_builders representative of the
+      # .loom file pattern modules
+      def traverse_dsl_modules(mod, pattern_parents=[], visited={}, &block)
         return if visited[mod.name] # prevent cycles
         visited[mod.name] = true
 
-        yield mod, pattern_parents.dup if is_pattern_module(mod)
+        yield mod, pattern_parents.dup if dsl_module?(mod)
 
         # Traverse all sub modules, even ones that aren't
         # Loom::Pattern[s], since they might contain more sub modules
@@ -189,7 +204,7 @@ module Loom::Pattern
 
         pattern_parents << mod
         sub_modules.each do |sub_mod|
-          traverse_pattern_modules sub_mod, pattern_parents.dup, visited, &block
+          traverse_dsl_modules sub_mod, pattern_parents.dup, visited, &block
         end
       end
     end

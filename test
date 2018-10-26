@@ -2,9 +2,16 @@
 echo "running unit and smoke tests"
 bundle exec rspec --tag ~integration
 rc=$?
+if [ $rc -ne 0 ]; then
+    exit $rc
+fi
 
-read -p "run integration tests (y/n)?" choice
-case "$choice" in
+y_or_Y="${1}"
+if [ "${y_or_Y}" == "" ];then
+    read -p "run integration tests (y/n)?" y_or_Y
+fi
+
+case "$y_or_Y" in
   y|Y ) bundle exec rspec --tag integration;;
   * ) exit $rc;;
 esac

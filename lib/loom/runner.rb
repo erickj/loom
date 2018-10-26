@@ -1,10 +1,13 @@
 module Loom
+  # TODO: Make Loom::Runner a module and move this to
+  # Loom::Runner::Core. Loom::RunnerModule is set up as a temporary namespace
+  # until that happens.
   class Runner
 
     PatternExecutionError = Class.new Loom::LoomError
     FailFastExecutionError = Class.new PatternExecutionError
 
-    include Loom::DSL
+    include Loom::RunnerModule::SSHKitConnector
 
     def initialize(loom_config, pattern_slugs=[], other_facts={})
       @pattern_slugs = pattern_slugs
@@ -73,11 +76,13 @@ module Loom
         exit 97
       rescue Loom::LoomError => e
         Loom.log.error "Loom::LoomError => #{e.inspect}, run with -d for more"
-        Loom.log.debug e.cause.backtrace.join "\n\t"
+        backtrace = e.cause.nil? ? e.backtrace : e.cause.backtrace
+        Loom.log.debug backtrace.join "\n\t"
+        Loom.log.debug backtrace.join "\n\t"
         exit 98
       rescue => e
-        Loom.log.fatal "fatal error => #{e.inspect}"
-        Loom.log.fatal e.backtrace.join "\n\t"
+        # TODO: Make error/exception logging look like this everywhere
+        Loom.log.fatal "fatal error =>\n#{e.inspect}\n\t#{e.backtrace.join("\n\t\t")}"
 
         loom_files = @loom_config.files.loom_files
         loom_errors = e.backtrace.select { |line| line =~ /(#{loom_files.join("|")})/ }
@@ -135,40 +140,18 @@ module Loom
 
         begin
           @pattern_refs.each do |pattern_ref|
-            slug = pattern_ref.slug
-            pattern_description = "[#{hostname} => #{slug}]"
-
             if @caught_sig_int
-              Loom.log.warn "caught SIGINT, skipping #{pattern_description}"
+              Loom.log.warn "caught SIGINT, skipping #{log_token(pattern_ref, hostname)}"
               next
             elsif inventory_list.disabled? hostname
               Loom.log.warn "host disabled due to previous failure, " +
-                            "skipping: #{pattern_description}"
+                            "skipping: #{log_token(pattern_ref, hostname)}"
               next
             end
 
-            Loom.log.debug "collecting facts for => #{pattern_description}"
-            # Collects facts for each pattern run on each host, this way if one
-            # pattern run updates would be facts, the next pattern will see the
-            # new fact.
-            fact_shell = Loom::Shell.create @mod_loader, sshkit_backend, dry_run
-            fact_set = Loom::Facts.fact_set(host_spec, fact_shell, @loom_config)
-                         .merge @other_facts
-
-            Loom.log.info "running pattern => #{pattern_description}"
-            # Creates a new shell for executing the pattern, so as not to be
-            # tainted by the fact finding shell above.
-            pattern_shell = Loom::Shell.create @mod_loader, sshkit_backend, dry_run
-
-            Loom.log.warn "dry run only => #{pattern_description}" if dry_run
-            failures = execute_pattern pattern_ref, pattern_shell, fact_set
-
-            if failures.empty?
-              Loom.log.debug "success on => #{pattern_description}"
-            else
-              Loom.log.error "failures on => #{pattern_description}:\n\t%s" % (
-                failures.join("\n\t"))
-            end
+            # wip-patternbuilder is adding this feature
+#            run_analysis_phase(pattern_ref, host_spec, sshkit_backend)
+            run_execution_phase(pattern_ref, host_spec, sshkit_backend, dry_run)
           end
         rescue IOError => e
           # TODO: Try to patch SSHKit for a more specific error for unexpected
@@ -181,6 +164,32 @@ module Loom
           Loom.log.debug e
           handle_host_failure_strategy hostname, e.message
         end
+      end
+    end
+
+    def run_execution_phase(pattern_ref, host_spec, sshkit_backend, dry_run)
+      log_token = log_token(pattern_ref, host_spec.hostname)
+      Loom.log.debug "collecting facts for => #{log_token}"
+      # Collects facts for each pattern run on each host, this way if one
+      # pattern run updates would be facts, the next pattern will see the
+      # new fact.
+      fact_shell = Loom::Shell.create @mod_loader, sshkit_backend, dry_run
+      fact_set = Loom::Facts.fact_set(host_spec, fact_shell, @loom_config)
+        .merge @other_facts
+
+      Loom.log.info "running pattern => #{log_token}"
+      # Creates a new shell for executing the pattern, so as not to be
+      # tainted by the fact finding shell above.
+      pattern_shell = Loom::Shell.create @mod_loader, sshkit_backend, dry_run
+
+      Loom.log.warn "dry run only => #{log_token}" if dry_run
+      failures = execute_pattern pattern_ref, pattern_shell, fact_set
+
+      if failures.empty?
+        Loom.log.debug "success on => #{log_token}"
+      else
+        Loom.log.error "failures on => #{log_token}:\n\t%s" % (
+          failures.join("\n\t"))
       end
     end
 
@@ -218,7 +227,11 @@ module Loom
       run_failure
     end
 
-    private
+    def log_token(pattern_ref, hostname)
+      slug = pattern_ref.slug
+      "[#{hostname} => #{slug}]"
+    end
+
     def handle_host_failure_strategy(hostname, failure_summary=nil)
       failure_strategy = @loom_config.run_failure_strategy.to_sym
 

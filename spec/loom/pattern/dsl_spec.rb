@@ -3,6 +3,7 @@ require "loom/pattern"
 require "loom/shell"
 
 describe Loom::Pattern::DSL do
+  extend LoomSpec::LoomInternalsHelper
 
   # Fake API for tests. This object should raise an error on any command
   # execution.
@@ -18,8 +19,8 @@ describe Loom::Pattern::DSL do
       config.log_device = @logger_io
     end
 
-    @reference_set = Loom::Pattern::ReferenceSet::Builder
-      .create(loom_file, ':loom_file')
+    @reference_set =
+      Loom::Pattern::ReferenceSet.builder(loom_file, ':loom_file').build
   end
 
   let(:pattern_under_test) { @reference_set['pattern_under_test'] }

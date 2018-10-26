@@ -1,6 +1,42 @@
+# IN Progress:
+# [wip-patternbuilder]
+# * Add a phase to the pattern execution sequence to collect calls to factset and loom
+#   objects. Results collected from this ""pre-execute"" can be analyzed for errors, optimization,
+#   success assertions, verification, etc. The loom file then executes in 2 passes, analyze &
+#   execute.
+#   -- pre-fact collection - inject the facts (or loom) object as a recorder
+#   -- (like a mock in record mode) # instead of the factual fact set. no need
+#   -- to change any loom files.
+#   -- only run fact providers which are accessed in the pattern set
+#   -- only load modules accessed in the pattern set
+#
+# * Replace Pattern "mods" and "mod specs" in 80 Loom::Pattern::ReferenceSet
+#   with usages of a builder instead. Currently the internal data model in
+#   ReferenceSet is confusing, but luckily it's the only client of pattern
+#   modules, that have used Loom::Pattern::DSL. Change calls to
+#   DSL#pattern/report/weave (anythin else that creates a pattern) to add a new
+#   PatternBuilder to the module. Use the builder to implement the TODO above
+#   ("Add a phase..."). Implement analysis on the builder.
+# [master]
+# * ... ongoing ... ways to test and +verify+ pattern execution
+
+
 # TODO: DSL extensions:
-# - a way to test and verify pattern execution.... I still don't trust this
-#   enough. this starts with fixing error reporting.
+# - More Mods! .... ondeck:
+#   * bkblz
+#   * cassandra
+#   * apache (nginx?)
+#   * digital ocean
+#   * systemd-nspawj
+# - Models Future:
+#   Notice each ondeck module above (bkblz, cassanadra, apache, digital ocean,
+#   system-nspawn): covers a unique infrastructure area, i.e.: bkblz:object and
+#   cold storage, cassandra:hyper-scale data storage, apache/nginx:content
+#   serving, digital-ocean/aws/gcp:remote virtual hosting, containers:local
+#   virtual hosting
+#   I could generalize each of the above infrastructure area into a high level
+#   mod. Should I? Maybe not.
+# - auto mod documentation in the CLI
 # - Pattern+non_idempotent+ marks a pattern as explicitly not idempotent, this
 #   let's additional warnings and checks to be added
 # - A history module, store a log of each executed command, a hash of the .loom
@@ -31,33 +67,20 @@
 #   -- Best way is to migrate loom/mods/module and loom/mods/action_proxy into base classes of
 #      themselves. The isolate the shell specific behavior into a subclass of each to preserve the
 #      current behavior. A new "cli" module and "cli" action proxy would enable the implementation.
-# - Add a phase to the pattern execution sequence to collect calls to factset and loom
-#   objects. Results collected from this ""pre-execute"" can be analyzed for errors, optimization,
-#   success assertions, verification, etc. The loom file then executes in 2 passes, analyze &
-#   execute.
-#   -- pre-fact collection - inject the facts (or loom) object as a recorder (like a mock in record mode)
-#      instead of the factual fact set. no need to change any loom files.
-#   -- only run fact providers which are accessed in the pattern set
-#   -- only load modules accessed in the pattern set
-# - Replace Pattern "mods" and "mod specs" in Loom::Pattern::ReferenceSet with usages of a builder
-#   instead. Currently the internal data model in ReferenceSet is confusing, but luckily it's the
-#   only client of pattern modules, that have used Loom::Pattern::DSL. Change calls to
-#   DSL#pattern/report/weave (anythin else that creates a pattern) to add a new PatternBuilder to
-#   the module. Use the builder to implement the TODO above ("Add a phase..."). Implement analysis
-#   on the builder.
 
 =begin
 
 ## .loom File DSL
 
 See:
-* spec/test.loom for a valid .loom file.
+* spec/.loom/*.loom for a lots of valid .loom files.
+  * run these specs with `rspec spec/test_loom_spec.rb`
 * spec/loom/pattern/dsl_spec.rb for other examples
 
 
-I've tried to take inspriation from several ruby DSLs, including (but not
-limited to) RSpec, Thor, Commander, Sinatra... so hopefully it feels
-comfortable.
+I've tried to take inspriation from several ruby DSLs, including RSpec, Thor,
+Commander, Sinatra... so hopefully it feels comfortable. Thank you to all of
+those projects.
 
 Loom::Pattern::DSL is the mixin that defines the declarative API for all .loom
 file defined modules. It is included into Loom::Pattern by default. The outer
@@ -83,11 +106,11 @@ end
 
 It declares a reference set with slugs:
 
-* top_level
+* cmd
 * outer:first
 * outer:inner:second
 
-Defining the same pattern slug twice raises a DuplicatPatternRef error.
+Defining the same pattern slug twice raises a `DuplicatePatternRef` error.
 
 #### Code Details
 
@@ -103,12 +126,43 @@ file. A ReferenseSet being a collection of references with uniquely named
 slugs. The slug of a reference is computed from the module namespace and
 instance method name.
 
+### `weave`
+
+The `weave` creates a specialized pattern, that allows aliasing a sequence of
+pattern slugs as a single pattern name. Pattern execution will be flattened and
+run sequentially before or after any other patterns in the `$ loom` invocation.
+
+``` ~ruby
+pattern :step_1 { ... }
+pattern :step_2 { ... }
+
+weave :do_it, [ :step_1, :step_2 ]
+```
+
+This creates pattern :do_it, which when run `$ loom do_it` will run :step_1,
+:step_2. Recursive expansion is explicitly disallowed, only pattern names (not
+weaves), are allowed in the list of weave pattern slugs.
+
+#### Code Details
+
+Weave expansion to pattern slugs is accomplished by creating a
+Loom::Pattern::ExpandingReference via the Loom::Pattern::Loader+load+ path
+invoked via Loom::Runner+load+. Expansion happens on read via
+Loom::Pattern::Loader+patterns+, thus the list of patterns is constant
+throughout all phases of pattern execution.
+
 ### `report`
 
-Use `report` to create a pattern that outputs a fact, other value, or result of
-a block to yaml, json, or any other format.
+Use `report` to create another specialized pattern that prints a fact, value,
+or result of a block to yaml, json, or any other format to STDOUT.
 
-### `let`, `before`, and `after`
+### `let`, `before`, and `after`: for examples spec/.loom/parent_context.loom
+
+`let`, does the same as in RSpec (including the context details). It creates an
+alias for a value, available in all patterns.
+
+`before` and `after` are similar to the same in RSpec. Each before/after block
+is run before/after respectively to EACH pattern.
 
 Module::Inner, from above, inherits all +let+ declarations from its outer
 contexts, both :: (root) and ::Outer. +before+ hooks are run from a top-down
@@ -179,31 +233,6 @@ Loom::Facts::FactSet as parameters.
 See Loom::Pattern::DefinitionContext for evaluation of `let` blocks and
 before/after context ordering.
 
-### `weave`
-
-The `weave` keyword allows aliasing a sequence of patterns a single
-name. Pattern execution will be flattened and run sequentially before or after
-any other patterns in the `$ loom` invocation.
-
-``` ~ruby
-pattern :step_1 { ... }
-pattern :step_2 { ... }
-
-weave :do_it, [ :step_1, :step_2 ]
-```
-
-This creates pattern :do_it, which when run `$ loom do_it` will run :step_1,
-:step_2. Recursive expansion is explicitly disallowed, only pattern names (not
-weaves), are allowed in the 2nd param of `weave`.
-
-#### Code Details
-
-Weave expansion to pattern slugs is accomplished by creating a
-Loom::Pattern::ExpandingReference via the Loom::Pattern::Loader+load+ path
-invoked via Loom::Runner+load+. Expansion happens on read via
-Loom::Pattern::Loader+patterns+, thus the list of patterns is constant
-throughout all phases of pattern execution.
-
 #### Pattern Execution Sequence
 
 Once hosts and patterns are identified in earlier Loom::Runner phases,
@@ -250,24 +279,49 @@ module Loom::Pattern
 
   PatternDefinitionError = Class.new Loom::LoomError
 
-  # TODO: clarify this DSL to only export:
-  # - description
-  # - pattern
-  # - let
-  # - after/before
-  # other methods are utility methods used to process and run patterns.
+  DSL_METHODS = [
+    :desc,
+    :description,
+    :pattern,
+    :weave,
+    :report,
+    :with_facts,
+    :let,
+    :before,
+    :after,
+    :namespace
+  ]
+
+  ##
+  # The Loom DSL definition. See documentation above.
   module DSL
+    DSL_METHODS.each do |m|
+      define_method m do |*args, &block|
+        Loom.log.debug1(self) { "delegating Pattern::DSL call to DSLBuilder+#{m}+" }
+        @dsl_builder.send(m, *args, &block)
+      end
+    end
 
-    def pattern_mod_init
-      return if @inited
+    attr_reader :dsl_builder
 
+    class << self
+      def extended(receiving_mod)
+        # NB: Using Forwardable was awkward here due to the scope of extended, and
+        # the scope of where the fordwardable instance variable would live.
+        dsl_builder = PatternBuilder.new
+        receiving_mod.instance_variable_set :@dsl_builder, dsl_builder
+      end
+    end
+  end
+
+  class DSL::PatternBuilder
+
+    def initialize
       @pattern_map = {}
       @fact_map = {}
       @let_map = {}
       @hooks = []
       @next_description = nil
-
-      @inited = true
     end
 
     loom_accessor :namespace
@@ -277,6 +331,7 @@ module Loom::Pattern
     end
     alias_method :desc, :description
 
+    # BEGIN DSL Implementation
     def with_facts(**new_facts, &block)
       @fact_map.merge! new_facts
       yield_result = yield @fact_map if block_given?
@@ -296,14 +351,15 @@ module Loom::Pattern
     # @param format[:yaml|:json|:raw] default is :yaml
     def report(name, format: :yaml, &block)
       define_pattern_internal(name, kind: :report) do |loom, facts|
-        # TODO: I don't like all of this logic in the dsl.
+        # TODO: I don't like all of this logic here. It feels like it belongs in
+        # a mod.
         result = if block_given?
                    Loom.log.debug(self) { "report[#{name}] from block" }
-                   self.instance_exec(loom, facts, &block)
+                   instance_exec(loom, facts, &block)
                  elsif !Loom::Facts.is_empty?(facts[name])
                    Loom.log.debug(self) { "report[#{name}] from facts[#{name}]" }
                    facts[name]
-                 elsif self.respond_to?(name) && !self.send(name).nil?
+                 elsif respond_to?(name) && !self.send(name).nil?
                    Loom.log.debug(self) { "report[#{name}] from let{#{name}}" }
                    self.send name
                  else
@@ -328,7 +384,7 @@ module Loom::Pattern
       unless @next_description
         @next_description = "Weave runs patterns: %s" % pattern_slugs.join(", ")
       end
-      define_pattern_internal(name, kind: :weave) { true }
+      define_pattern_internal(name, kind: :weave, expanded_slugs: pattern_slugs) { true }
     end
 
     def before(&block)
@@ -338,31 +394,10 @@ module Loom::Pattern
     def after(&block)
       hook :after, &block
     end
+    # END DSL Implementation
 
-    def weave_slugs
-      @pattern_map.to_a.reduce({}) do |memo, pair|
-        name, pattern = pair
-        next memo unless pattern.is_weave?
-
-        memo.merge name => pattern.weave.pattern_slugs
-      end
-    end
-
-    def is_weave?(name)
-      @pattern_map[name].is_weave? rescue false
-    end
-
-    def pattern_methods
-      @pattern_map.values.map(&:name)
-    end
-
-    def pattern_description(name)
-      @pattern_map[name].description
-    end
-
-    def pattern_method(name)
-      raise UnknownPatternMethod, name unless @pattern_map[name.intern]
-      instance_method name
+    def patterns
+      @pattern_map.values
     end
 
     def hooks
@@ -382,9 +417,9 @@ module Loom::Pattern
     # named wrapper around a pattern execution block. This would be an advanced
     # usage when before and after blocks aren't scalable. It could also provided
     # additional filtering for pattern selection at weave time.
-    def define_pattern_internal(name, kind: :pattern, &loom_file_block)
+    def define_pattern_internal(name, kind: :pattern, **kwargs, &loom_file_block)
       unless block_given?
-        raise PatternDefinitionError, "missing block for pattern #{name}"
+        raise PatternDefinitionError, "missing block for pattern[#{name}]"
       end
       unless Pattern::KINDS[kind]
         raise "unknown pattern kind: #{kind}"
@@ -397,9 +432,9 @@ module Loom::Pattern
       @next_description = nil
       name = name.intern
 
-      Loom.log.debug(self) { "defined .loom pattern[#{kind}]: #{name}" }
-      @pattern_map[name] =
-        Pattern.new name: name, description: desc, kind: kind, &loom_file_block
+      Loom.log.debug(self) { "defined .loom pattern[kind:#{kind}]: #{name}" }
+      @pattern_map[name] = Pattern.new(
+        name: name, description: desc, kind: kind, **kwargs, &loom_file_block)
 
       # TODO: defining the method on the pattern ::Module is unnecessary, I just
       # unbind it later on and rebind it to the
@@ -412,7 +447,7 @@ module Loom::Pattern
       # end
       # ```
       # Patterns declared in the .loom file are defined here:
-      define_method name do |loom, facts|
+      define_singleton_method name do |loom, facts|
         Loom.log.debug(self) { "calling .loom file #{kind}: #{name}" }
         instance_exec(loom, facts, &loom_file_block)
       end

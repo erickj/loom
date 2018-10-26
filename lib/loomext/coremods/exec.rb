@@ -62,6 +62,7 @@ module LoomExt::CoreMods
 
   class Fail < Loom::Mods::Module
     register_mod :fail do |message=nil|
+      # TODO: create a stacktrace that indicates the raise happened from the .loom file.
       raise FailError, message
     end
   end

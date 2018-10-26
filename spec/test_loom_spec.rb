@@ -29,6 +29,8 @@ describe "spec .loom files" do
 
   let(:host) { "rp0" }
   let(:patterns) { ref_set.slugs }
+
+  # Tests important command line flags
   let(:command) {[
       "bin/loom weave #{patterns.join " "}",
       "-t",
@@ -39,18 +41,22 @@ describe "spec .loom files" do
       "-X sshkit_log_level=warn",
       "-X log_device=stderr",
       "-X run_failure_strategy=cowboy",
+      "-F param_facts='from args'"
     ]}
 
   # bundle exec rspec --tag smoke
   context "test.loom" do
-    let(:loom_file) { LOOM_FILES.select { |p| p.match?(/test.loom/) }.first }
+    let(:loom_file) { LOOM_FILES.select { |p| p.match?(/#{subject}/) }.first }
     let(:ref_set) { create_reference_set(path: loom_file) }
-    let(:patterns) { ref_set.slugs.select { |s| s.match?(/^smoke:/) } }
+    let(:patterns) { [:smoke] }
     let(:host) { "localhost" }
 
-    it "should pass a few tests quickly", :smoke => true do
+    it "should pass the smoke tests quickly", :smoke => true do
       exec = command.join(' ')
-      output = `#{exec}`
+      output = `#{exec} 2>&1`
+      unless $?.exitstatus == 0
+        puts "loom output:\n#{output}"
+      end
       expect($?.exitstatus).to eq 0
     end
   end
