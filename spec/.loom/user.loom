@@ -1,4 +1,5 @@
 # Tests for LoomExt::CoreMods::User
+# $ bx rspec spec/test_loom_spec.rb -f d -t file:user.loom
 module User
   include Loom::Pattern
 

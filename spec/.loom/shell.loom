@@ -1,3 +1,4 @@
+# $ bx rspec spec/test_loom_spec.rb -f d -t file:shell.loom
 module Shell
   include Loom::Pattern
 

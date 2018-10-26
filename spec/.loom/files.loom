@@ -1,4 +1,5 @@
 # Tests for LoomExt::CoreMods::Package
+# $ bx rspec spec/test_loom_spec.rb -f d -t file:files.loom
 module Files
   include Loom::Pattern
 

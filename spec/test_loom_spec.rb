@@ -15,6 +15,10 @@ describe "spec .loom files" do
   }
 
   EXPECTED_EXIT_CODE = {
+    # 100 to indicate failing patterns
+    # + 3 failed patterns
+    # ---
+    # 103 expected exit code
     "fail.loom" => 103
   }
 
@@ -64,7 +68,10 @@ describe "spec .loom files" do
         it "should pass all tests",
         SPEC_TAGS.merge(:file => File.basename(loom_file)) do
           exec = command.join(' ')
-          puts exec
+          puts <<EOS
+executing command:
+$ #{exec}
+EOS
           # TODO pattern match the commands on STDOUT (see comment in
           # .loom/test.loom)
           output = `#{exec}`

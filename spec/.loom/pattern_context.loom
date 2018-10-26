@@ -1,5 +1,6 @@
 # Tests patterns nested at deeper module levels with contextual let, before, and
 # after hooks. Verifies hook order and contexts are set correctly.
+# $ bx rspec spec/test_loom_spec.rb -f d -t file:pattern_context.loom
 module PatternContext
   module Parent
     include Loom::Pattern

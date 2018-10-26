@@ -1,5 +1,6 @@
 # Tests for LoomExt::CoreMods::Vbox.
 # Currently disabled
+# $ bx rspec spec/test_loom_spec.rb -f d -t file:vms.loom
 module VMs
   include Loom::Pattern
 

@@ -1,6 +1,6 @@
 # TODO: add in test verifications that these tests are actually doing what
 # they're supposed to do.
-
+# $ bx rspec spec/test_loom_spec.rb -f d -t file:test.loom
 module Smoke
   include Loom::Pattern
 

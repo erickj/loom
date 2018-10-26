@@ -1,9 +1,9 @@
 # All patterns are expected to fail
-
+# $ bx rspec spec/test_loom_spec.rb -f d -t file:fail.loom
 desc "Always fails due to return code."
 pattern :fail_soft do |loom, facts|
-  unless loom << :false
-    loom.x :echo, "i am false"
+  unless loom.x :false
+    loom.x :echo, "i fail soft, because ALL examples are expected to succeed"
   end
 end
 

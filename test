@@ -1,2 +1,10 @@
 #!/bin/sh
+echo "running unit and smoke tests"
 bundle exec rspec --tag ~integration
+rc=$?
+
+read -p "run integration tests (y/n)?" choice
+case "$choice" in
+  y|Y ) bundle exec rspec --tag integration;;
+  * ) exit $rc;;
+esac

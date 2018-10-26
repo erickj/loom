@@ -1,4 +1,5 @@
 # !!! NOTE: This will reboot the host it runs on!!!
+# $ bx rspec spec/test_loom_spec.rb -f d -t file:error_handling.loom
 module ErrorHandling
   include Loom::Pattern
 
