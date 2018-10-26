@@ -1,0 +1,21 @@
+module Net
+  include Loom::Pattern
+
+  desc "tests the net package, with_net check"
+  pattern :check_net do |loom, facts|
+    unless loom.net(check_host: '127.0.0.1').has_net?
+      loom.fail 'can not ping localhost'
+    end
+
+    has_local_net = false
+    loom.net(check_host: '127.0.0.1').with_net do
+      has_local_net = true
+    end
+    loom.fail "should have local net" unless has_local_net
+  end
+
+  desc "expected check_net failures"
+  pattern :check_net_fail do |loom, facts|
+    loom.net(timeout: 2, check_host: '1.1.1.1').check_net
+  end
+end

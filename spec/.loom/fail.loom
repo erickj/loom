@@ -1,0 +1,20 @@
+# All patterns are expected to fail
+
+desc "Always fails due to return code."
+pattern :fail_soft do |loom, facts|
+  unless loom << :false
+    loom.x :echo, "i am false"
+  end
+end
+
+desc "Always fails due to a hard failure"
+pattern :fail_hard do |loom, facts|
+  loom.fail "Fail big or not at all"
+end
+
+desc "Expected to fail: Check timeout commands"
+pattern :timeout_fail do |loom, facts|
+  loom.timeout(:timeout => 1) do
+    loom.x :sleep, 2
+  end
+end

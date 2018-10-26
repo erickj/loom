@@ -13,7 +13,8 @@ module LoomSpec
       Loom::Shell::FakeApi.new
     end
 
-    def create_reference_set(loom_file_src, path: 'loom/file/path')
+    def create_reference_set(loom_file_src=nil, path: 'loom/file/path')
+      loom_file_src ||= File.read(path)
       Loom::Pattern::ReferenceSet::Builder.create(loom_file_src, path)
     end
 

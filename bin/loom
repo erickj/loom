@@ -65,9 +65,13 @@ EOS
         Loom.configure { |c| c.inventory_all_hosts = flag }
       end
 
+      global_option "-L", "Adds localhost to the active inventory" do |flag|
+        Loom.configure { |c| c.inventory_hosts << "localhost" }
+      end
+
       global_option "-H", "--hosts host1,h2,h3", Array,
                     "Adds HOSTS to the active inventory" do |hosts|
-        Loom.configure { |c| c.inventory_hosts = hosts }
+        Loom.configure { |c| c.inventory_hosts.concat hosts }
       end
 
       global_option "-G", "--groups group1,g2,g3", Array,

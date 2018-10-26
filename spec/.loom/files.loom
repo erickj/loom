@@ -1,0 +1,39 @@
+# Tests for LoomExt::CoreMods::Package
+module Files
+  include Loom::Pattern
+
+  desc "Reads a file"
+  pattern :read do |loom, facts|
+    loom.files("/etc/hosts").cat
+  end
+
+  desc "Gsubs file text"
+  pattern :gsub do |loom, facts|
+    loom.files("/tmp/garbage").write <<EOS
+This is a bunch of junk
+192.123.456.0\t\thostname.xyz
+EOS
+
+    loom.files("/tmp/garbage")
+      .cat
+      .gsub(pattern: /[\d]{3}/, replace: "xxx")
+      .append("this is something new")
+      .cat
+  end
+
+  desc "Chowns a file"
+  pattern :chown do |loom, facts|
+    loom.files("/tmp/chown.me")
+      .touch
+      .append("this file will be owned by root")
+
+    loom.sudo do
+      loom.files("/tmp/chown.me").chown user: :root
+      loom.x :ls, "-lZ", "/tmp/chown.me"
+
+      loom.files("/tmp/chown.me").chown user: :root, group: :root
+    end
+
+    loom.sudo { loom.exec :rm, "/tmp/chown.me" }
+  end
+end

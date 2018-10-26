@@ -1,0 +1,46 @@
+module Shell
+  include Loom::Pattern
+
+  desc "Executes some commands in a subshell"
+  pattern :subshell do |loom, facts|
+    loom << :"(echo $$; echo $BASHPID; whoami)"
+    loom << :"(sudo -i -u root whoami)"
+
+    loom.local << :"(echo $$; echo $BASHPID; whoami)"
+    #    loom.local << "(sudo -i -u root whoami)"
+  end
+
+  desc "Tests nested sudo scenarios"
+  pattern :sudo do |loom, facts|
+    loom.sudo user: "root" do
+      loom << :pwd
+      loom << :whoami
+      loom.exec :touch, "loom.file"
+
+      loom.sudo do
+        loom << :whoami
+        loom << :pwd
+        loom.x :touch, "root.file"
+
+        loom.user.add_system_user :postgres, uid: 999
+        loom.sudo user: :postgres do
+          loom << :whoami
+          loom.cd "/tmp" do
+            loom << :pwd
+            loom.x :touch, "postgres.file"
+          end
+        end
+        loom.user.remove :postgres
+
+        loom.x :touch, "root.file2"
+      end
+    end
+
+    loom.cd "/tmp" do
+      loom << :pwd
+      loom.sudo user: :root, cmd: :pwd do loom << :pwd end
+      loom << :pwd
+    end
+
+  end
+end

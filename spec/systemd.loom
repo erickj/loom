@@ -1,0 +1,22 @@
+module Systemd
+  include Loom::Pattern
+
+  report :sshd_status, format: :json do |l, _|
+    l.systemd_units("sshd.service").status
+  end
+
+  report :units, format: :raw do |l, _|
+    l.systemd_units.list
+  end
+
+  report :sockets, format: :raw do |l, _|
+    l.systemd_sockets.list
+  end
+
+  report :timers, format: :raw do |l, _|
+    l.systemd_timers.list
+  end
+end
+
+
+

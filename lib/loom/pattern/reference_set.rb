@@ -56,22 +56,22 @@ module Loom::Pattern
       using Loom::CoreExt # using demodulize for namespace creation
 
       class << self
-        def create(ruby_code, source)
+        def create(ruby_code, source_file)
           shell_module = Module.new
           shell_module.include Loom::Pattern
           # TODO: I think this is my black magic for capturing stacktrace
           # info... I forget the details. Add documentation.
-          shell_module.module_eval ruby_code, source, 1
+          shell_module.module_eval ruby_code, source_file, 1
           shell_module.namespace ""
 
-          self.new(shell_module, source).build
+          self.new(shell_module, source_file).build
         end
       end
 
-      def initialize(shell_module, source)
+      def initialize(shell_module, source_file)
         @shell_module = shell_module
         @pattern_mod_specs = pattern_mod_specs
-        @source = source
+        @source_file = source_file
       end
 
       def build
@@ -106,7 +106,7 @@ module Loom::Pattern
         desc = mod.pattern_description weave_name
         Loom.log.warn "no descripiton for weave => #{slug}" unless desc
 
-        ExpandingReference.new slug, mod.weave_slugs[weave_name], @source, desc
+        ExpandingReference.new slug, mod.weave_slugs[weave_name], @source_file, desc
       end
 
       def build_pattern_reference(pattern_name, slug, context, mod)
@@ -114,7 +114,7 @@ module Loom::Pattern
         desc = mod.pattern_description pattern_name
         Loom.log.warn "no descripiton for pattern => #{slug}" unless desc
 
-        Reference.new slug, method, @source, context, desc
+        Reference.new slug, method, @source_file, context, desc
       end
 
       def context_for_mod_spec(mod_spec)

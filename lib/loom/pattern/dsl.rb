@@ -303,6 +303,7 @@ module Loom::Pattern
                    err_msg = "no facts to report for fact[#{name}:#{name.class}]"
                    raise PatternDefinitionError, err_msg
                  end
+        result = result.stdout if result.is_a? Loom::Shell::CmdResult
 
         puts case format
              when :yaml then result.to_yaml

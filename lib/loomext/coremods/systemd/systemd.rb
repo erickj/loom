@@ -1,12 +1,26 @@
 module LoomExt::CoreMods
 
+  module SystemdCommon
+    def do_systemctl(action, unit=nil, *args, flags: [])
+      flags << "--no-pager"
+      flags << "--no-legend"
+      flags << "--no-ask-password"
+
+      exec_args = [
+        "systemctl",
+        flags,
+        action,
+        unit
+      ].flatten.compact
+      args = exec_args.concat args
+      shell.execute(*args)
+    end
+  end
+
   class Systemd < Loom::Mods::Module
+    include SystemdCommon
 
     register_mod :systemd
-
-    def do_systemctl(action, *args)
-      shell.execute "systemctl", action, *args
-    end
 
     module Actions
 
@@ -15,7 +29,7 @@ module LoomExt::CoreMods
       end
 
       def is_active?(unit)
-        status(unit).match? /^\s+Active:\sactive\s/
+        do_systemctl "is-active", unit
       end
 
       def status(unit)

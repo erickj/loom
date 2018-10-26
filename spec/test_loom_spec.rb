@@ -1,5 +1,83 @@
 require 'open3'
 
+describe "spec .loom files" do
+  include LoomSpec::LoomInternalsHelper
+
+  LOOM_FILES = Dir.glob "spec/.loom/**/*.loom"
+
+  # Tests disabled until this runs on an overlayfs container
+  XFILE_SET = {
+    "error_handling.loom" => true,
+    "files.loom" => true,
+    "pkg.loom" => true,
+    "user.loom" => true,
+    "vms.loom" => true,
+  }
+
+  EXPECTED_EXIT_CODE = {
+    "fail.loom" => 103
+  }
+
+  SPEC_TAGS = {
+    :integration => true,
+    :long => true
+  }
+
+  let(:host) { "rp0" }
+  let(:patterns) { ref_set.slugs }
+  let(:command) {[
+      "bin/loom weave #{patterns.join " "}",
+      "-t",
+      "-l #{loom_file}",
+      "-X log_level=info",
+      "-H #{host}",
+      "-V",
+      "-X sshkit_log_level=warn",
+      "-X log_device=stderr",
+      "-X run_failure_strategy=cowboy",
+    ]}
+
+  # bundle exec rspec --tag smoke
+  context "test.loom" do
+    let(:loom_file) { LOOM_FILES.select { |p| p.match?(/test.loom/) }.first }
+    let(:ref_set) { create_reference_set(path: loom_file) }
+    let(:patterns) { ref_set.slugs.select { |s| s.match?(/^smoke:/) } }
+    let(:host) { "localhost" }
+
+    it "should pass a few tests quickly", :smoke => true do
+      exec = command.join(' ')
+      output = `#{exec}`
+      expect($?.exitstatus).to eq 0
+    end
+  end
+
+  # bundle exec rspec --tag integration
+  LOOM_FILES.each do |loom_file|
+    context File.basename loom_file do
+      let(:ref_set) { create_reference_set(path: loom_file) }
+
+      if XFILE_SET[File.basename(loom_file)]
+        xit "should pass all the tests",
+        SPEC_TAGS.merge(:file => File.basename(loom_file)) {}
+      else
+        it "should pass all tests",
+        SPEC_TAGS.merge(:file => File.basename(loom_file)) do
+          exec = command.join(' ')
+          # TODO pattern match the commands on STDOUT (see comment in
+          # .loom/test.loom)
+          output = `#{exec}`
+
+          basename = File.basename(loom_file)
+          expected_exit_code = EXPECTED_EXIT_CODE[basename] || 0
+          expect($?.exitstatus).to eq expected_exit_code
+        end
+      end
+    end
+  end
+end
+
+# Archived 10/26/2018
+
 # TODO: fix this test to run the runloom.sh script. Currently running
 # the loom script in a child process from ruby runs without a
 # TTY. This causes the sshkit/net:ssh connection to connect abnormally
@@ -33,25 +111,23 @@ require 'open3'
 #       /home/erick/.gem/ruby/gems/sshkit-1.11.3/lib/sshkit/backends/abstract.rb:141:in `tap'
 #       /home/erick/.gem/ruby/gems/sshkit-1.11.3/lib/sshkit/backends/abstract.rb:141:in `create_command_and_execute'
 #       /home/erick/workspace/src/loom/lib/loom/shell.rb:91:in `execute'
+#   xit "executes successfully" do
 
-xdescribe "spec/test.loom file" do
+#     exit_status = nil
 
-  let(:runloom) { File.join File.dirname(__FILE__), 'runloom.sh' }
+#     # https://stackoverflow.com/questions/6338908/ruby-difference-between-exec-system-and-x-or-backticks
+#     output = `#{runloom} -F fact_1=1,fact_2=2,fact_3=3`
 
-  it "executes successfully" do
-    exit_status = nil
-    `#{runloom}`
-#    Open3.popen3(runloom) do |stdin,stdout,stderr,wait_thred|
-#      puts "running #{runloom}"
-#      while line=stderr.gets do
-#        puts line
-#      end
-#
-#      exit_status = wait_thred.value
-#    end
+# #    Open3.popen3(runloom) do |stdin,stdout,stderr,wait_thred|
+# #      puts "running #{runloom}"
+# #      while line=stderr.gets do
+# #        puts line
+# #      end
+# #
+# #      exit_status = wait_thred.value
+# #    end
 
-    puts "exit status: #{$?.exitstatus}"
+#     puts "exit status: #{$?.exitstatus}"
 
-    expect($?.exitstatus).to eq 0
-  end
-end
+#     expect($?.exitstatus).to eq 0
+#   end
