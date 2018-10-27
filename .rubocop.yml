@@ -12,6 +12,9 @@ Layout/MultilineMethodCallIndentation:
 Metrics/LineLength:
   Max: 100
 
+Naming/HeredocDelimiterNaming:
+  Enable: false
+
 # https://rubocop.readthedocs.io/en/latest/cops_style/
 Style/Alias:
   Enabled: false

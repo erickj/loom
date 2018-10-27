@@ -1,20 +1,33 @@
 # All patterns are expected to fail
 # $ bx rspec spec/test_loom_spec.rb -f d -t file:fail.loom
-desc "Always fails due to return code."
-pattern :fail_soft do |loom, facts|
-  unless loom.x :false
-    loom.x :echo, "i fail soft, because ALL examples are expected to succeed"
+module ExpectedFailures
+  include Loom::Pattern
+
+  before do
+    Loom.log.warn <<EOS
+
+!!!
+!!! The next case is expected to fail !!!
+!!!
+EOS
   end
-end
 
-desc "Always fails due to a hard failure"
-pattern :fail_hard do |loom, facts|
-  loom.fail "Fail big or not at all"
-end
+  desc "Always fails due to return code."
+  pattern :fail_soft do |loom, facts|
+    unless loom.x :false
+      loom.x :echo, "i fail soft, because ALL examples are expected to succeed"
+    end
+  end
 
-desc "Expected to fail: Check timeout commands"
-pattern :timeout_fail do |loom, facts|
-  loom.timeout(:timeout => 1) do
-    loom.x :sleep, 2
+  desc "Always fails due to a hard failure"
+  pattern :fail_hard do |loom, facts|
+    loom.fail "Fail big or not at all"
+  end
+
+  desc "Expected to fail: Check timeout commands"
+  pattern :timeout_fail do |loom, facts|
+    loom.timeout(:timeout => 1) do
+      loom.x :sleep, 2
+    end
   end
 end
