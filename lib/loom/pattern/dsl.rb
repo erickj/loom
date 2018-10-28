@@ -452,22 +452,6 @@ module Loom::Pattern
       Loom.log.debug(self) { "defined .loom pattern[kind:#{kind}]: #{name}" }
       @pattern_map[name] = Pattern.new(
         name: name, description: desc, kind: kind, **kwargs, &loom_file_block)
-
-      # TODO: defining the method on the pattern ::Module is unnecessary, I just
-      # unbind it later on and rebind it to the
-      # Loom::Pattern::Reference::RunContext, so all I really need to do is
-      # cache the original block.
-      ##
-      # ```ruby
-      # pattern :xyz do |loom, facts|
-      #   loom.x :dostuff
-      # end
-      # ```
-      # Patterns declared in the .loom file are defined here:
-      define_singleton_method name do |loom, facts|
-        Loom.log.debug(self) { "calling .loom file #{kind}: #{name}" }
-        instance_exec(loom, facts, &loom_file_block)
-      end
     end
 
     def hook(scope, &block)
