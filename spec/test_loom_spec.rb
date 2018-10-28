@@ -29,62 +29,109 @@ describe "spec .loom files" do
 
   let(:host) { "rp0" }
   let(:patterns) { ref_set.slugs }
+  let(:command) { nil }
 
-  # Tests important command line flags
-  let(:command) {[
-      "bin/loom weave #{patterns.join " "}",
-      "-t",
-      "-l #{loom_file}",
-      "-X log_level=info",
-      "-H #{host}",
-      "-V",
-      "-X sshkit_log_level=warn",
-      "-X log_device=stderr",
-      "-X run_failure_strategy=cowboy",
-      "-F param_facts='from args'"
-    ]}
+  let(:executor) { lambda do |*cmd_parts|
+      cmd_exec = cmd_parts.join ' '
+      output = `#{cmd_exec} 2>&1`
+      OpenStruct.new({
+        cmd_exec: cmd_exec,
+        stdout: output,
+        rc: $?.exitstatus,
+      })
+    end }
+  let(:exec_result) { executor.call(*command) }
 
-  # bundle exec rspec --tag smoke
-  context "test.loom" do
-    let(:loom_file) { LOOM_FILES.select { |p| p.match?(/#{subject}/) }.first }
-    let(:ref_set) { create_reference_set(path: loom_file) }
-    let(:patterns) { [:smoke] }
-    let(:host) { "localhost" }
+  context "$ loom inventory", smoke: true do
+    let(:command) {[
+        "bin/loom inventory",
+        "-X loom_search_paths=./spec/.loom"
+      ]}
 
-    it "should pass the smoke tests quickly", :smoke => true do
-      exec = command.join(' ')
-      output = `#{exec} 2>&1`
-      unless $?.exitstatus == 0
-        puts "loom output:\n#{output}"
+    it "should list all hosts in inventory.yml" do
+      result = exec_result
+
+      ["a.host.to.check", "my.other.host"].each do |h|
+        expect(result.stdout).to match(/#{h}/), result.to_yaml
       end
-      expect($?.exitstatus).to eq 0
+      expect(result.rc).to eql 0
     end
   end
 
-  # bundle exec rspec --tag integration
-  LOOM_FILES.each do |loom_file|
-    context File.basename loom_file do
-      let(:loom_file) { loom_file }
+  context "$ loom pattern", smoke: true do
+    let(:command) {[
+        "bin/loom patterns",
+        "-l #{LOOM_FILES.join ','}"
+      ]}
+
+    it "should list all patterns to stdout" do
+      result = exec_result
+
+      # some expected pattern slug namespaces
+      ["pkg", "shell", "expectedfailures", "test"].each do |ns|
+        expect(result.stdout).to match(/^\s*#{ns}:.+/), result.to_yaml
+      end
+      expect(result.rc).to eql 0
+    end
+  end
+
+  context "$ loom weave" do
+
+    # Tests important command line flags
+    let(:command) {[
+        "bin/loom weave #{patterns.join " "}",
+        "-t",
+        "-l #{loom_file}",
+        "-X log_level=info",
+        "-H #{host}",
+        "-V",
+        "-X sshkit_log_level=warn",
+        "-X log_device=stderr",
+        "-X run_failure_strategy=cowboy",
+        "-F param_facts='from args'"
+      ]}
+
+    # bundle exec rspec --tag smoke
+    context "test.loom" do
+      let(:loom_file) { LOOM_FILES.select { |p| p.match?(/#{subject}/) }.first }
       let(:ref_set) { create_reference_set(path: loom_file) }
+      let(:patterns) { [:smoke] }
+      let(:host) { "localhost" }
 
-      if XFILE_SET[File.basename(loom_file)]
-        xit "should pass all the tests",
-        SPEC_TAGS.merge(:file => File.basename(loom_file)) {}
-      else
-        it "should pass all tests",
-        SPEC_TAGS.merge(:file => File.basename(loom_file)) do
-          exec = command.join(' ')
-          puts <<EOS
-executing command:
-$ #{exec}
+      it "should pass the smoke tests quickly", :smoke => true do
+        result = exec_result
+        unless result.rc == 0
+          puts "loom output:\n#{output}"
+        end
+        expect(result.rc).to eq 0
+      end
+    end
+
+    # bundle exec rspec --tag integration
+    LOOM_FILES.each do |loom_file|
+      context File.basename loom_file do
+        let(:loom_file) { loom_file }
+        let(:ref_set) { create_reference_set(path: loom_file) }
+
+        if XFILE_SET[File.basename(loom_file)]
+          xit "should pass all the tests",
+          SPEC_TAGS.merge(:file => File.basename(loom_file)) {}
+        else
+          it "should pass all tests",
+          SPEC_TAGS.merge(:file => File.basename(loom_file)) do
+            exec = command.join(' ')
+            puts <<EOS
+            executing command:
+              $ #{exec}
 EOS
-          # TODO pattern match the commands on STDOUT (see comment in
-          # .loom/test.loom)
-          output = `#{exec}`
+            # TODO pattern match the commands on STDOUT (see comment in
+            # .loom/test.loom)
+            output = `#{exec}`
 
-          basename = File.basename(loom_file)
-          expected_exit_code = EXPECTED_EXIT_CODE[basename] || 0
-          expect($?.exitstatus).to eq expected_exit_code
+            basename = File.basename(loom_file)
+            expected_exit_code = EXPECTED_EXIT_CODE[basename] || 0
+            expect($?.exitstatus).to eq expected_exit_code
+          end
         end
       end
     end

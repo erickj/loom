@@ -158,6 +158,9 @@ EOS
           end
         end
       end
+      # TODO: p and patterns produce different output on failure, p is a
+      # truncated stack. Figure out why, and fix that. This is going to be
+      # somewhere in Commander.
       alias_command :"p", :"patterns"
 
       command :"config" do |c|

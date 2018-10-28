@@ -77,7 +77,7 @@ module Loom
     class FileManager
 
       def initialize(config)
-        @loom_search_paths = config.loom_search_paths
+        @loom_search_paths = [config.loom_search_paths].flatten
         @loom_files = config.loom_files
         @loom_file_patterns = config.loom_file_patterns
       end

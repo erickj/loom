@@ -9,7 +9,7 @@
 module Loom::Pattern
 
   DuplicatePatternRef = Class.new Loom::LoomError
-  UnknownPatternMethod = Class.new Loom::LoomError
+  NoReferenceForSlug = Class.new Loom::LoomError
   InvalidPatternNamespace = Class.new Loom::LoomError
 
   ##
@@ -41,7 +41,7 @@ module Loom::Pattern
 
     def get_pattern_ref(slug)
       ref = @slug_to_ref_map[slug]
-      raise UnknownPatternMethod, slug unless ref
+      raise NoReferenceForSlug, slug unless ref
       ref
     end
     alias_method :[], :get_pattern_ref
