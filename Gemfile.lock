@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    loom-core (0.0.6)
+    loom-core (0.0.7)
       bcrypt_pbkdf (>= 1.0, < 2.0)
       commander (~> 4.4)
       ed25519 (>= 1.0, < 2.0)
