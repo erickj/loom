@@ -20,7 +20,6 @@
 # [master]
 # * ... ongoing ... ways to test and +verify+ pattern execution
 
-
 # TODO: DSL extensions:
 # - More Mods! .... ondeck:
 #   * bkblz
@@ -28,6 +27,7 @@
 #   * apache (nginx?)
 #   * digital ocean
 #   * systemd-nspawj
+
 # - Models Future:
 #   Notice each ondeck module above (bkblz, cassanadra, apache, digital ocean,
 #   system-nspawn): covers a unique infrastructure area, i.e.: bkblz:object and
@@ -36,14 +36,18 @@
 #   virtual hosting
 #   I could generalize each of the above infrastructure area into a high level
 #   mod. Should I? Maybe not.
+
 # - auto mod documentation in the CLI
+
 # - Pattern+non_idempotent+ marks a pattern as explicitly not idempotent, this
 #   let's additional warnings and checks to be added
+
 # - A history module, store a log of each executed command, a hash of the .loom
 #   file, and the requisite facts (the let declarations) for each executed pattern
 #   on the host it executes. /var/log/loom/history? Create this log on startup.
 #   -- add a new set of history commands through the CLI and a history
 #      FactProvider exposing host/loom/pattern_slug execution stats.
+
 # - Provide automatic command reversion support with a =Module= DSL that ties in
 #   with local revision history.
 #   -- allow Module actions/mods to define an "undo" command of itself given the
@@ -60,6 +64,7 @@
 #      accesses to fact_set be done in let expressions (enforce this maybe?)
 #   -- Later... before/after hooks can ensure the entire loom execution sequence
 #      was "revertable"
+
 # - A mechanism to allow mods to register CLI flags and actions. Using an action predicate
 #   mechanisms can add flags at the global or action levels. All CLI flags set config values.
 #   -- Mods can also register for action namespaces similar to git. This is consistent with mod
@@ -114,7 +119,11 @@ Defining the same pattern slug twice raises a `DuplicatePatternRef` error.
 
 #### Code Details
 
-To follow the code path for .loom file loading see:
+Loom::DSL is a facade available to all .loom file ::Modules that include
+Loom::Pattern. It provides Module singleton methods listed at
+Loom::DSL::DSL_METHODS.
+
+Code path for .loom file loading:
 
     Loom::Runner#load
       -> Loom::Pattern::Loader.load
@@ -136,12 +145,17 @@ run sequentially before or after any other patterns in the `$ loom` invocation.
 pattern :step_1 { ... }
 pattern :step_2 { ... }
 
-weave :do_it, [ :step_1, :step_2 ]
+module OtherTasks
+...
+end
+
+weave :do_it, [ :step_1, :step_2, :other_tasks:* ]
 ```
 
 This creates pattern :do_it, which when run `$ loom do_it` will run :step_1,
-:step_2. Recursive expansion is explicitly disallowed, only pattern names (not
-weaves), are allowed in the list of weave pattern slugs.
+:step_2, and all slugs that match /other_tasks.*/. Recursive expansion is
+explicitly disallowed, only pattern names (not weaves), are allowed in the list
+of weave pattern slugs.
 
 #### Code Details
 
@@ -282,13 +296,16 @@ module Loom::Pattern
   DSL_METHODS = [
     :desc,
     :description,
+
     :pattern,
     :weave,
     :report,
+
     :with_facts,
     :let,
     :before,
     :after,
+
     :namespace
   ]
 
@@ -324,6 +341,7 @@ module Loom::Pattern
       @next_description = nil
     end
 
+    # BEGIN DSL Implementation
     loom_accessor :namespace
 
     def description(description)
@@ -331,7 +349,6 @@ module Loom::Pattern
     end
     alias_method :desc, :description
 
-    # BEGIN DSL Implementation
     def with_facts(**new_facts, &block)
       @fact_map.merge! new_facts
       yield_result = yield @fact_map if block_given?

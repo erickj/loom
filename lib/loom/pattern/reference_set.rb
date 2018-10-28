@@ -70,6 +70,8 @@ module Loom::Pattern
           shell_module.include Loom::Pattern
           # TODO: I think this is my black magic for capturing stacktrace
           # info... I forget the details. Add documentation.
+          # TODO: This is where I would need to hack into to auto-include
+          # Loom::Pattern in .loom file modules
           shell_module.module_eval ruby_code, source_file, 1
           shell_module.namespace ""
 
