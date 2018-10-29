@@ -1,0 +1,23 @@
+# Regression tests for issues that I've spent too much time debugging.
+# These must be safe to run on localhost.
+module Regression
+  include Loom::Pattern
+
+  # For some reason, weave glob expansion is more confusing than it should be.
+  weave :verify_no_glob_expansion, [
+    "regression:dummies:date",
+    "regression:dummies:echo",
+  ]
+
+  weave :verify_glob_expansion, [
+    "regression:dummies:*",
+  ]
+
+  module Dummies
+    include Loom::Pattern
+
+    pattern(:date) { |l, _| l.x :date }
+    pattern(:echo) { |l, _| l.x :echo, :hello }
+    pattern(:uptime) { |l, _| l.x :uptime }
+  end
+end
