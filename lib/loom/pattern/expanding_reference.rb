@@ -24,13 +24,10 @@ module Loom::Pattern
     end
 
     def expand_slugs
-      slug_matchers = @reference_slugs.map do |s|
-        Matcher.get_matcher(s)
-      end
-
       # O(MN) :(
-      expanded_slugs = @reference_slugs.flat_map do |s|
-        @reference_set.slugs.select { |s| slug_matchers.any? { |m| m.match?(s) } }
+      expanded_slugs = @reference_slugs.flat_map do |my_slug|
+        matcher = Matcher.get_matcher(my_slug)
+        @reference_set.slugs.select { |your_slug| matcher.match? your_slug }
       end.uniq
       Loom.log.debug3(self) { "Loom::Pattern::ExpandingReference@reference_slugs+: #{@reference_slugs.join(",")}"}
       Loom.log.debug3(self) { "Loom::Pattern::ExpandingReference+expanded_slugs+: #{expanded_slugs.join(",")}"}
