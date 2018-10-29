@@ -3,7 +3,11 @@
 # $ bx rspec spec/test_loom_spec.rb -f d -t file:test.loom
 weave :smoke, [
   :"test:*",
+  :uptime,
 ]
+
+desc "a pattern with no namespace"
+pattern(:uptime) { |loom, _| loom.x uptime }
 
 module Test
   include Loom::Pattern

@@ -103,7 +103,7 @@ describe "spec .loom files" do
         unless result.rc == 0
           puts "loom output:\n#{output}"
         end
-        expect(result.rc).to eq 0
+        expect(result.rc).to eq(0), result.to_yaml
       end
     end
 
