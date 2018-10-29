@@ -68,16 +68,13 @@ module Loom::Pattern
       module GlobMatcher
         MATCH_P = /(\*)$/
 
-        def self.handles_pattern?(p)
-          p.match? MATCH_P
+        def self.handles_pattern?(my_slug)
+          res = my_slug.match? MATCH_P
+          Loom.log.debug2(self) { "#{p}.match? #{MATCH_P} = #{res}" }
+          res
         end
 
         def match?(your_pattern)
-          # TODO: This can be made RE2 compliant later.
-          unless GlobMatcher.handles_pattern?(@my_slug)
-            raise 'WTF? invalid pattern, must end in "*": %s' % @my_slug
-          end
-
           prefix = @my_slug.to_s.gsub(MATCH_P, "")
           Loom.log.debug2(self) { "GlobMatcher+match?+ #{@my_slug} #{your_pattern}, prefix: #{prefix}"}
           your_pattern.to_s.start_with? prefix

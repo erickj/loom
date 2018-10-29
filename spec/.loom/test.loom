@@ -7,7 +7,7 @@ weave :smoke, [
 ]
 
 desc "a pattern with no namespace"
-pattern(:uptime) { |loom, _| loom.x uptime }
+pattern(:uptime) { |loom, _| loom.x :uptime }
 
 module Test
   include Loom::Pattern
