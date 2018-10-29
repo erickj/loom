@@ -171,7 +171,7 @@ module Loom::Shell
       sshkit_result = if @dry_run
                         wrap(:printf, first: true) do
                           r = execute_internal(*cmd_parts, **cmd_opts)
-                          Loom.log.info { "\t%s" % prompt_fmt(cmd_result.full_stdout.strip) }
+                          Loom.log.info { "\t%s" % prompt_fmt(r.full_stdout.strip) }
                           r
                         end
                       else
