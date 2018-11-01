@@ -17,8 +17,14 @@
 #   DSL#pattern/report/weave (anythin else that creates a pattern) to add a new
 #   PatternBuilder to the module. Use the builder to implement the TODO above
 #   ("Add a phase..."). Implement analysis on the builder.
+
 # [master]
 # * ... ongoing ... ways to test and +verify+ pattern execution
+#   - IDEA: launch a container on host before executing a pattern, w/ an overlay
+#     fs of "/". Use this to canary a command sequence before executing on the
+#     actual host. This way no rollback, or idempotence checks, or state
+#     management, or history needs to be kept. Only the volatile container image
+#     needs to be torn down.
 
 # TODO: DSL extensions:
 # - More Mods! .... ondeck:

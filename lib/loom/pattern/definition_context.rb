@@ -46,7 +46,9 @@ module Loom::Pattern
 
         if value.nil? || value.equal?(Loom::Facts::EMPTY)
           Loom.log.error "value of let expression[:#{let_key}] is nil"
-          raise NilLetValueError, let_key
+          # TODO: I'm not sure what to do here, but raising an error isn't
+          # very user friendly.... as I just learned.
+#          raise NilLetValueError, "empty value for let[#{let_key}]"
         end
         scope_object.define_singleton_method(let_key) { value }
       end
