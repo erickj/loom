@@ -78,6 +78,8 @@
 #   -- Best way is to migrate loom/mods/module and loom/mods/action_proxy into base classes of
 #      themselves. The isolate the shell specific behavior into a subclass of each to preserve the
 #      current behavior. A new "cli" module and "cli" action proxy would enable the implementation.
+#
+# - Add a "groups" flag to `loom i` to display inventory groupings
 
 =begin
 
