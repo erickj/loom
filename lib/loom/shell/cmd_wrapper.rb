@@ -1,4 +1,4 @@
-require "shellwords"
+  require "shellwords"
 
 module Loom::Shell
 
@@ -27,7 +27,7 @@ module Loom::Shell
             parts
           end
         end
-        CmdWrapper.new *cmd_parts.flatten, {
+        CmdWrapper.new *cmd_parts.flatten, **{
           :should_quote => should_quote,
           :is_wrapped => true
         }
@@ -39,6 +39,9 @@ module Loom::Shell
     # @param :redirc [Array<CmdRedirect>] STDIO redirection for the command
     # in quotes.
     def initialize(*cmd, should_quote: false, is_wrapped: false, redirect: [])
+      if cmd.last.is_a?(Hash)
+        raise ArgumentError.new "kwargs mixed into cmd"
+      end
       @cmd_parts = cmd.flatten
       @should_quote = should_quote
       @is_wrapped = is_wrapped

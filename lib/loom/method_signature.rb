@@ -64,7 +64,7 @@ module Loom
         end
 
         def build
-          MatchSpec.new(@map || {})
+          MatchSpec.new(**(@map || {}))
         end
       end
 

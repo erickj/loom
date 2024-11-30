@@ -32,13 +32,13 @@ module Loom::Mods
       @action_block = pattern_block
     end
 
-    def execute(*args, &pattern_block)
+    def execute(*args, **kwargs, &pattern_block)
       if respond_to? :mod_block
         Loom.log.debug3(self) { "executing mod block => #{args} #{pattern_block}" }
-        mod_block *args, &pattern_block
+        mod_block *args, **kwargs, &pattern_block
       else
         Loom.log.debug3(self) { "initing action => #{args}" }
-        init_action *args, &pattern_block
+        init_action *args, **kwargs, &pattern_block
 
         # TODO: ooohhh... the action_proxy code path is fucking
         # crazy. ActionProxy needs some documentation.
@@ -99,11 +99,12 @@ module Loom::Mods
         # (e.g.) to each instance of Module. (actually I think it's because this
         # is executing from the subclass (via import_actions), so it's only that
         # class). in any case, add more docs and code pointers.
-        define_method bound_method_name do |*args, &block|
+        define_method bound_method_name do |*args, **kwargs, &block|
           Loom.log.debug1(self) { "exec mod action #{self.class}##{bound_method_name}" }
 
           bound_method = unbound_method.bind self
-          bound_method.call *args, &block
+
+          bound_method.call *args, **kwargs, &block
         end
         Loom.log.debug2(self) { "bound mod action => #{self.class.name}##{action_name}" }
 

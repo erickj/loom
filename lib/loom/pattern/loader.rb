@@ -36,7 +36,7 @@ module Loom::Pattern
 
     def load_patterns
       @loom_pattern_files.each do |f|
-        raise SiteFileNotFound, f unless File.exists? f
+        raise SiteFileNotFound, f unless File.exist? f
         load_pattern_file f
       end
     end

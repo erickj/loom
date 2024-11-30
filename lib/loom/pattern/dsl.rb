@@ -321,9 +321,9 @@ module Loom::Pattern
   # The Loom DSL definition. See documentation above.
   module DSL
     DSL_METHODS.each do |m|
-      define_method m do |*args, &block|
+      define_method m do |*args, **kwargs, &block|
         Loom.log.debug1(self) { "delegating Pattern::DSL call to DSLBuilder+#{m}+" }
-        @dsl_builder.send(m, *args, &block)
+        @dsl_builder.send(m, *args, **kwargs, &block)
       end
     end
 

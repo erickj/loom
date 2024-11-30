@@ -85,7 +85,7 @@ describe Loom::HostSpec do
   end
 
   context "ipv6 addresses" do
-    let(:host_string) { "[2a02:120b:2c28:5920:6257:18ff:febf:13c8:22]" }
+    let(:host_string) { "[2a02:120b:2c28:5920:6257:18ff:febf:13c8]:22" }
 
     it "parses user@localhost configurations as remote" do
       expect(subject.is_localhost?).to be false

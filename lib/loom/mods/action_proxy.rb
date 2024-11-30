@@ -40,7 +40,7 @@ module Loom::Mods
           # idiomatic.
           bound_action_name = tuple[1]
 
-          define_method public_action_name do |*args, &block|
+          define_method public_action_name do |*args, **kwargs, &block|
             # TODO[P0]: Effectively this is the API for all mods, but it's
             # burried here in the middle of nowhere. Add documentation - or make
             # it easier to read.
@@ -48,7 +48,7 @@ module Loom::Mods
               "proxy to mod action: #{public_action_name} => #{bound_action_name}, #{@mod}"
             end
 
-            @mod.send bound_action_name, *args, &block
+            @mod.send bound_action_name, *args, **kwargs, &block
           end
           Loom.log.debug2 self do
             "defined action proxy action: #{public_action_name} => #{bound_action_name}"

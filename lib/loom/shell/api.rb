@@ -20,14 +20,14 @@ module Loom::Shell
     end
 
     # This is the entry point for `loom.foo` calls from .loom files.
-    def method_missing(name, *args, &block)
-      Loom.log.debug3(self) { "shell api => #{name} #{args} #{block}" }
+    def method_missing(name, *args, **kwargs, &block)
+      Loom.log.debug3(self) { "shell api => #{name} #{args} #{kwargs} #{block}" }
       # TODO: The relationship between shell and mod_loader seems leaky here, a
       # Shell::Api should have a shell and not care about the mod_loader,
       # currently it seems to violate Demeter. The shell should dispatch to the
       # mod_loader only as an implementation detail. Otherwise this is harder to
       # test.
-      @mod_loader.send name, @shell, *args, &block
+      @mod_loader.send name, @shell, *args, **kwargs, &block
     end
   end
 

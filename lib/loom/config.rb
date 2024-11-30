@@ -69,7 +69,7 @@ module Loom
         map = config ? config.config_map : CONFIG_VARS.dup
         config_struct = OpenStruct.new **map
         yield config_struct if block_given?
-        Config.new config_struct.to_h
+        Config.new **config_struct.to_h
       end
     end
 

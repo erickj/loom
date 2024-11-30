@@ -54,14 +54,14 @@ module Loom::Mods
         raise ModDefinedError, name if instance_methods.include? name
         registered_mods[mod_klass.name] = [name]
 
-        define_method name do |shell, *args, &pattern_block|
+        define_method name do |shell, *args, **kwargs, &pattern_block|
           Loom.log.debug3(self) do
-            "handling mod call => #{mod_klass}##{name} #{args} #{pattern_block}"
+            "handling mod call => #{mod_klass}##{name} #{args} #{kwargs} #{pattern_block}"
           end
           load_mod_klass mod_klass, shell
 
           mod = mod_klass.new shell, @loom_config
-          mod.execute *args, &pattern_block
+          mod.execute *args, **kwargs, &pattern_block
         end
       end
 
