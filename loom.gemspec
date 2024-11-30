@@ -15,7 +15,7 @@ Gem::Specification.new do |s|
   s.executables   = `git ls-files -- bin/*`.split("\n").map { |f| File.basename(f) }
   s.require_paths = %w[lib]
 
-  s.add_dependency 'sshkit', '~> 1.11'
+  s.add_dependency 'sshkit', '~> 1.23'
   s.add_dependency 'commander', '~> 4.4'
 
   # *** Obsolete, see new issue below ***
@@ -28,14 +28,14 @@ Gem::Specification.new do |s|
   # I can manually `gem install net-ssh --version 4.0.0.beta3` for now.
   # s.add_dependency 'net-ssh', '>= 4.0.0.beta3'
   s.add_dependency 'net-ssh', '>= 5'
-  s.add_dependency 'rbnacl-libsodium', '1.0.10'
+  s.add_dependency 'rbnacl-libsodium', '1.0.16'
   s.add_dependency 'bcrypt_pbkdf', ">= 1.0", "< 2.0"
 
   # New net-ssh requiremetns for ed25519
   # https://github.com/net-ssh/net-ssh/issues/565
   s.add_dependency 'ed25519', '>=1.0', '<2.0'
 
-  s.add_development_dependency 'bundler', '~> 1.13'
+  s.add_development_dependency 'bundler'
   s.add_development_dependency 'rake', '~> 11.3'
   s.add_development_dependency 'rspec', '~> 3.5'
   s.add_development_dependency 'guard-rspec', '~> 4.7'
